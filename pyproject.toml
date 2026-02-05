@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=64.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pygreenbuild"
+version = "0.1.0"
+description = "ICDI GreenBIM Python Tool"
+readme = "README.md"
+license = { text = "GPL-3.0" }
+authors = [
+    { name = "Lucy Lee", email = "lucy@icdi.asia" },
+    { name = "ICDI Team", email = "greenbim@icdi.asia" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "requests>=2.28.0",
+    "pandas>=1.5.0",
+    "numpy",
+    "beautifulsoup4>=4.11.0",
+    "lxml>=4.9.0",
+    "psychrolib>=2.5.0",
+    "sqlalchemy>=2.0.0",
+    "typer>=0.9.0",
+    "typing_extensions>=4.0.0",
+]
+keywords = ["bim", "energy", "crawler", "green-building"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.5.0",
+    "pre-commit>=3.0.0",
+    "ipython>=8.0.0",
+]
+test = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/Lucy-icdi/pygreenbuild"
+Repository = "https://github.com/Lucy-icdi/pygreenbuild"
+Issues = "https://github.com/Lucy-icdi/pygreenbuild"
+
+[tool.setuptools]
+packages = { find = { where = ["src"] } }
+package-dir = { "" = "src" }
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
