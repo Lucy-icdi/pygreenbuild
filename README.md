@@ -52,4 +52,3 @@ pip uninstall pygreenbuild
 ```bash
 deactivate
 ```
-
