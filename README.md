@@ -21,7 +21,7 @@ ingestion → parsers → transform → load
 | **load** | 輸出 CSV／資料庫 |
 | **metrics** | 冷房需求 USRT、COP、EER、耗電率 |
 
-詳細說明見 [`doc/說明文件.md`](doc/說明文件.md)，目錄規劃見 [`tree.csv`](tree.csv)。
+使用說明見 [`docs/`](docs/)（Quarto `.qmd` 分篇），目錄規劃見 [`tree.csv`](tree.csv)。
 
 ## 開始使用
 

@@ -1,0 +1,24 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  title: "pygreenbuild"
+  navbar:
+    left:
+      - href: index.qmd
+        text: 開始使用
+      - href: architecture.qmd
+        text: 架構概覽
+      - href: weather-crawler.qmd
+        text: 天氣爬蟲
+      - href: chiller-usrt.qmd
+        text: 冷房需求 USRT
+      - href: chiller-performance.qmd
+        text: 冰水主機成效
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    code-copy: true

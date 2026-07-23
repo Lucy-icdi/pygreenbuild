@@ -1,0 +1,110 @@
+---
+title: "冷房需求 USRT"
+---
+
+模組：`pygreenbuild.metrics.chiller_usrt`  
+類別：`ChillerUSRT`／`ChillerUSRTCalculator`（別名）
+
+## 公式
+
+流量先轉 L/min、溫度先轉 ℃：
+
+```
+熱量值 kW = Flow(L/min) × |入水溫 − 出水溫|(℃) × 4.186 / 60
+USRT      = 熱量值 kW × 0.284   （kw_to_usrt=True，預設）
+```
+
+若 `kw_to_usrt=False`，回傳熱量值 kW（不乘 0.284）。後續算 COP／EER 時建議先取原始熱量 kW，見 [冰水主機成效](chiller-performance.qmd)。
+
+## 流量單位換算
+
+| 單位 | 係數（→ L/min） |
+|------|-----------------|
+| CMH (m³/h) | × 16.7 |
+| CFM | × 28.3 |
+| LPM | × 1 |
+
+## 單台冰水主機
+
+```python
+from pygreenbuild.metrics import ChillerUSRTCalculator
+
+usrt = ChillerUSRTCalculator.calculate_single_chiller_usrt(
+    flow_rate=17.49,
+    flow_unit="CMH",          # 內部 ×16.7 → LPM
+    return_temp=13.28,
+    return_temp_unit="C",
+    supply_temp=8.86,
+    supply_temp_unit="C",
+    kw_to_usrt=True,          # True→USRT；False→熱量 kW
+)
+
+# 溫度可用華氏
+usrt_f = ChillerUSRTCalculator.calculate_single_chiller_usrt(
+    flow_rate=2500, flow_unit="LPM",
+    return_temp=54.5, return_temp_unit="F",
+    supply_temp=44.6, supply_temp_unit="F",
+)
+```
+
+## 多區域泵加總
+
+```python
+total = ChillerUSRTCalculator.zone_pumps_total([
+    {"flow": 10, "return_temp": 12, "supply_temp": 7, "flow_unit": "CMH"},
+    {"flow": 8,  "return_temp": 12, "supply_temp": 7, "flow_unit": "CMH"},
+])
+```
+
+## 融冰 ICE_RT
+
+預設流量單位 CFM；負流量取絕對值。
+
+```python
+ice_rt = ChillerUSRTCalculator.ice_melt(
+    -148.38, hex_return_temp=15.39, hex_supply_temp=9.93, flow_unit="CFM"
+)
+```
+
+## DataFrame 批次
+
+```python
+import pandas as pd
+from pygreenbuild.metrics import ChillerUSRTCalculator
+
+df = pd.DataFrame({
+    "flow": [17.49, 20.0],
+    "return_temp": [13.28, 14.0],
+    "supply_temp": [8.86, 9.0],
+})
+
+df = ChillerUSRTCalculator.calculate_usrts(
+    df,
+    flow_col="flow",
+    return_temp_col="return_temp",
+    supply_temp_col="supply_temp",
+    flow_unit="CMH",
+    result_col="USRT",
+    kw_to_usrt=True,
+)
+```
+
+算成效前若要保留原始熱量：
+
+```python
+df = ChillerUSRTCalculator.calculate_usrts(
+    df, flow_col="flow", return_temp_col="return_temp", supply_temp_col="supply_temp",
+    flow_unit="CMH", kw_to_usrt=False, result_col="冷房熱量_kW",
+)
+```
+
+## 主要方法
+
+| 方法 | 說明 |
+|------|------|
+| `calculate_single_chiller_usrt` | 單台冰水主機 USRT／熱量 kW |
+| `zone_pumps_total` | 多區域泵加總 |
+| `ice_melt` | 融冰 USRT |
+| `calculate_usrts` | DataFrame 逐列計算，結果併回原表 |
+
+示範腳本：`tests/scripts/usrt_test.py`。

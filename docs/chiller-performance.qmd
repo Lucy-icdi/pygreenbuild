@@ -1,0 +1,81 @@
+---
+title: "冰水主機成效（COP／EER／耗電率）"
+---
+
+模組：`pygreenbuild.metrics.chiller_performance`  
+類別：`ChillerPerformance`／`ChillerPerformanceCalculator`（別名）
+
+建議計算順序：先用 [冷房需求 USRT](chiller-usrt.qmd) 以 `kw_to_usrt=False` 求出**原始冷房熱量 kW**，再算 COP／EER；USRT 與耗電率可由熱量換算。
+
+## 公式
+
+```
+冷房熱量 (kW) = Flow(L/min) × |ΔT|(℃) × 4.186 / 60
+COP           = 冷房熱量 (kW) / 輸入功率 (kW)
+EER (kcal/h/W)= 冷房熱量 (kW) × 0.86 / 主機耗電 (kW)
+USRT          = 冷房熱量 (kW) × 0.284
+耗電率        = 輸入功率 (kW) / USRT
+```
+
+耗電率可傳 `cooling_kw`（內部 ×0.284）或直接傳已轉換的 `usrt`。
+
+## 單筆計算
+
+```python
+from pygreenbuild.metrics import ChillerUSRTCalculator, ChillerPerformanceCalculator
+
+cooling_kw = ChillerUSRTCalculator.calculate_single_chiller_usrt(
+    flow_rate=17.49, flow_unit="CMH",
+    return_temp=13.28, return_temp_unit="C",
+    supply_temp=8.86, supply_temp_unit="C",
+    kw_to_usrt=False,
+)
+
+cop = ChillerPerformanceCalculator.calculate_cop(cooling_kw=cooling_kw, power_kw=643.95)
+eer = ChillerPerformanceCalculator.calculate_eer(cooling_kw=cooling_kw, power_kw=643.95)
+
+# 耗電率：cooling_kw 與 usrt 擇一
+rate = ChillerPerformanceCalculator.calculate_power_rate(
+    power_kw=643.95, cooling_kw=cooling_kw
+)
+rate = ChillerPerformanceCalculator.calculate_power_rate(
+    power_kw=643.95, usrt=1149
+)
+```
+
+## DataFrame 批次
+
+```python
+df = ChillerUSRTCalculator.calculate_usrts(
+    df, flow_col="flow", return_temp_col="rwt", supply_temp_col="swt",
+    kw_to_usrt=False, result_col="冷房熱量_kW",
+)
+
+df = ChillerPerformanceCalculator.calculate_performance(
+    df,
+    cooling_kw_col="冷房熱量_kW",
+    power_cols=["CH_02", "CH_04"],   # 多欄會加總
+    power_rate_from="cooling_kw",    # 或 "usrt"
+)
+# 結果多出：輸入功率_kW、COP、EER、USRT、耗電率
+```
+
+| 參數 | 說明 |
+|------|------|
+| `cooling_kw_col` | 原始冷房熱量（kW）欄 |
+| `power_cols` | 功率欄（字串或 list） |
+| `power_rate_from` | `"cooling_kw"`（×0.284）或 `"usrt"`（不轉換） |
+| `usrt_col` | 寫入 USRT 欄名；設 `None` 則不輸出 |
+| `eer_col` / `cop_col` / `power_rate_col` | 結果欄名 |
+
+## 主要方法
+
+| 方法 | 說明 |
+|------|------|
+| `calculate_cop` | 單筆 COP（輸入 `cooling_kw`） |
+| `calculate_eer` | 單筆 EER（kcal/h/W） |
+| `calculate_power_rate` | 單筆耗電率（`cooling_kw` 或 `usrt` 擇一） |
+| `cooling_kw_to_usrt` | 熱量 kW → USRT（×0.284） |
+| `calculate_performance` | DataFrame 批次算 COP／EER／USRT／耗電率 |
+
+示範腳本：`tests/scripts/performance_test.py`。
