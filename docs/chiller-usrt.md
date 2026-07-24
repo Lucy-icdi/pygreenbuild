@@ -1,6 +1,4 @@
----
-title: "冷房需求 USRT"
----
+# 冷房需求 USRT
 
 模組：`pygreenbuild.metrics.chiller_usrt`  
 類別：`ChillerUSRT`／`ChillerUSRTCalculator`（別名）
@@ -14,7 +12,7 @@ title: "冷房需求 USRT"
 USRT      = 熱量值 kW × 0.284   （kw_to_usrt=True，預設）
 ```
 
-若 `kw_to_usrt=False`，回傳熱量值 kW（不乘 0.284）。後續算 COP／EER 時建議先取原始熱量 kW，見 [冰水主機成效](chiller-performance.qmd)。
+若 `kw_to_usrt=False`，回傳熱量值 kW（不乘 0.284）。後續算 COP／EER 時建議先取原始熱量 kW，見 [冰水主機成效](chiller-performance.md)。
 
 ## 流量單位換算
 

@@ -1,6 +1,4 @@
----
-title: "架構概覽"
----
+# 架構概覽
 
 `pygreenbuild` 採典型 **ETL 管線**（Extract → Transform → Load），以四個層級串接資料從「取得」到「輸出」；另以 **metrics** 層承載成效／KPI 計算，與 ETL 解耦。
 
@@ -64,7 +62,7 @@ ingestion → parsers → transform → load
 | `chiller_usrt.py` | `ChillerUSRT` / `ChillerUSRTCalculator` | 冷房需求 USRT（含融冰、區域泵） |
 | `chiller_performance.py` | `ChillerPerformance` / `ChillerPerformanceCalculator` | COP、EER、耗電率 |
 
-詳見 [冷房需求 USRT](chiller-usrt.qmd)、[冰水主機成效](chiller-performance.qmd)。
+詳見 [冷房需求 USRT](chiller-usrt.md)、[冰水主機成效](chiller-performance.md)。
 
 ## 目錄對照（規劃）
 

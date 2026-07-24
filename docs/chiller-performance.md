@@ -1,11 +1,9 @@
----
-title: "冰水主機成效（COP／EER／耗電率）"
----
+# 冰水主機成效（COP／EER／耗電率）
 
 模組：`pygreenbuild.metrics.chiller_performance`  
 類別：`ChillerPerformance`／`ChillerPerformanceCalculator`（別名）
 
-建議計算順序：先用 [冷房需求 USRT](chiller-usrt.qmd) 以 `kw_to_usrt=False` 求出**原始冷房熱量 kW**，再算 COP／EER；USRT 與耗電率可由熱量換算。
+建議計算順序：先用 [冷房需求 USRT](chiller-usrt.md) 以 `kw_to_usrt=False` 求出**原始冷房熱量 kW**，再算 COP／EER；USRT 與耗電率可由熱量換算。
 
 ## 公式
 

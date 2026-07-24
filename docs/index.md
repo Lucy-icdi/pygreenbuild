@@ -1,6 +1,4 @@
----
-title: "開始使用 pygreenbuild"
----
+# 開始使用 pygreenbuild
 
 `pygreenbuild` 是 ICDI GreenBIM 的 Python 工具套件，涵蓋：
 
@@ -8,14 +6,14 @@ title: "開始使用 pygreenbuild"
 - WRF 預報相關流程
 - 冰水主機成效計算（USRT／COP／EER／耗電率）
 
-本資料夾以 Quarto（`.qmd`）分篇說明套件用法。建議依下列順序閱讀：
+本資料夾分篇說明套件用法。建議依下列順序閱讀：
 
 | 篇章 | 內容 |
 |------|------|
-| [架構概覽](architecture.qmd) | ETL 與 metrics 層級定位 |
-| [天氣爬蟲](weather-crawler.qmd) | `codis_yearly`／`monthly`／`daily` |
-| [冷房需求 USRT](chiller-usrt.qmd) | 流量 × ΔT → 熱量 kW／USRT |
-| [冰水主機成效](chiller-performance.qmd) | COP、EER、耗電率 |
+| [架構概覽](architecture.md) | ETL 與 metrics 層級定位 |
+| [天氣爬蟲](weather-crawler.md) | `codis_yearly`／`monthly`／`daily` |
+| [冷房需求 USRT](chiller-usrt.md) | 流量 × ΔT → 熱量 kW／USRT |
+| [冰水主機成效](chiller-performance.md) | COP、EER、耗電率 |
 
 ## 安裝
 
@@ -56,12 +54,4 @@ cooling_kw = ChillerUSRTCalculator.calculate_single_chiller_usrt(
 )
 cop = ChillerPerformanceCalculator.calculate_cop(cooling_kw=cooling_kw, power_kw=643.95)
 eer = ChillerPerformanceCalculator.calculate_eer(cooling_kw=cooling_kw, power_kw=643.95)
-```
-
-## 預覽本文件
-
-需安裝 [Quarto](https://quarto.org/)，於專案根目錄執行：
-
-```bash
-quarto preview docs
 ```
