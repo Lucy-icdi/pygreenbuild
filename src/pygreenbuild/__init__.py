@@ -3,9 +3,11 @@ from .ingestion.weather_crawler.codis_crawler_tojson import (
     codis_monthly,
     codis_daily,
 )
+from .metrics import ChillerKPI
 
 __all__ = [
     "codis_yearly",
     "codis_monthly",
     "codis_daily",
+    "ChillerKPI",
 ]

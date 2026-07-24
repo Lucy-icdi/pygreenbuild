@@ -1,9 +1,11 @@
 # 冰水主機成效（COP／EER／耗電率）
 
 模組：`pygreenbuild.metrics.chiller_performance`  
-類別：`ChillerPerformance`／`ChillerPerformanceCalculator`（別名）
+類別：`ChillerPerformance`／`ChillerKPI`（別名，可自頂層匯入）
 
 建議計算順序：先用 [冷房需求 USRT](chiller-usrt.md) 以 `kw_to_usrt=False` 求出**原始冷房熱量 kW**，再算 COP／EER；USRT 與耗電率可由熱量換算。
+
+常用匯入：`from pygreenbuild import ChillerKPI`（亦支援 `from pygreenbuild.metrics import ChillerKPI`）。
 
 ## 公式
 
@@ -20,23 +22,24 @@ USRT          = 冷房熱量 (kW) × 0.284
 ## 單筆計算
 
 ```python
-from pygreenbuild.metrics import ChillerUSRTCalculator, ChillerPerformanceCalculator
+from pygreenbuild import ChillerKPI
+from pygreenbuild.metrics import calculatorUSRT
 
-cooling_kw = ChillerUSRTCalculator.calculate_single_chiller_usrt(
+cooling_kw = calculatorUSRT.calculate_single_chiller_usrt(
     flow_rate=17.49, flow_unit="CMH",
     return_temp=13.28, return_temp_unit="C",
     supply_temp=8.86, supply_temp_unit="C",
     kw_to_usrt=False,
 )
 
-cop = ChillerPerformanceCalculator.calculate_cop(cooling_kw=cooling_kw, power_kw=643.95)
-eer = ChillerPerformanceCalculator.calculate_eer(cooling_kw=cooling_kw, power_kw=643.95)
+cop = ChillerKPI.calculate_cop(cooling_kw=cooling_kw, power_kw=643.95)
+eer = ChillerKPI.calculate_eer(cooling_kw=cooling_kw, power_kw=643.95)
 
 # 耗電率：cooling_kw 與 usrt 擇一
-rate = ChillerPerformanceCalculator.calculate_power_rate(
+rate = ChillerKPI.calculate_power_rate(
     power_kw=643.95, cooling_kw=cooling_kw
 )
-rate = ChillerPerformanceCalculator.calculate_power_rate(
+rate = ChillerKPI.calculate_power_rate(
     power_kw=643.95, usrt=1149
 )
 ```
@@ -44,12 +47,12 @@ rate = ChillerPerformanceCalculator.calculate_power_rate(
 ## DataFrame 批次
 
 ```python
-df = ChillerUSRTCalculator.calculate_usrts(
+df = calculatorUSRT.calculate_usrts(
     df, flow_col="flow", return_temp_col="rwt", supply_temp_col="swt",
     kw_to_usrt=False, result_col="冷房熱量_kW",
 )
 
-df = ChillerPerformanceCalculator.calculate_performance(
+df = ChillerKPI.calculate_performance(
     df,
     cooling_kw_col="冷房熱量_kW",
     power_cols=["CH_02", "CH_04"],   # 多欄會加總

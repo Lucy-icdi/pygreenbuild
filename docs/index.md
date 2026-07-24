@@ -39,19 +39,19 @@ pip uninstall pygreenbuild
 ## 快速範例
 
 ```python
-from pygreenbuild import codis_daily
-from pygreenbuild.metrics import ChillerUSRTCalculator, ChillerPerformanceCalculator
+from pygreenbuild import codis_daily, ChillerKPI
+from pygreenbuild.metrics import calculatorUSRT
 
 # 天氣日報
 codis_daily("466920", "test_output", "2024-11-01", "2024-11-30")
 
 # 冷房熱量 kW → COP／EER
-cooling_kw = ChillerUSRTCalculator.calculate_single_chiller_usrt(
+cooling_kw = calculatorUSRT.calculate_single_chiller_usrt(
     flow_rate=17.49, flow_unit="CMH",
     return_temp=13.28, return_temp_unit="C",
     supply_temp=8.86, supply_temp_unit="C",
     kw_to_usrt=False,
 )
-cop = ChillerPerformanceCalculator.calculate_cop(cooling_kw=cooling_kw, power_kw=643.95)
-eer = ChillerPerformanceCalculator.calculate_eer(cooling_kw=cooling_kw, power_kw=643.95)
+cop = ChillerKPI.calculate_cop(cooling_kw=cooling_kw, power_kw=643.95)
+eer = ChillerKPI.calculate_eer(cooling_kw=cooling_kw, power_kw=643.95)
 ```

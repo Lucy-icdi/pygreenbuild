@@ -1,7 +1,7 @@
 # 冷房需求 USRT
 
 模組：`pygreenbuild.metrics.chiller_usrt`  
-類別：`ChillerUSRT`／`ChillerUSRTCalculator`（別名）
+類別：`calculatorUSRT`
 
 ## 公式
 
@@ -25,9 +25,9 @@ USRT      = 熱量值 kW × 0.284   （kw_to_usrt=True，預設）
 ## 單台冰水主機
 
 ```python
-from pygreenbuild.metrics import ChillerUSRTCalculator
+from pygreenbuild.metrics import calculatorUSRT
 
-usrt = ChillerUSRTCalculator.calculate_single_chiller_usrt(
+usrt = calculatorUSRT.calculate_single_chiller_usrt(
     flow_rate=17.49,
     flow_unit="CMH",          # 內部 ×16.7 → LPM
     return_temp=13.28,
@@ -38,7 +38,7 @@ usrt = ChillerUSRTCalculator.calculate_single_chiller_usrt(
 )
 
 # 溫度可用華氏
-usrt_f = ChillerUSRTCalculator.calculate_single_chiller_usrt(
+usrt_f = calculatorUSRT.calculate_single_chiller_usrt(
     flow_rate=2500, flow_unit="LPM",
     return_temp=54.5, return_temp_unit="F",
     supply_temp=44.6, supply_temp_unit="F",
@@ -48,7 +48,7 @@ usrt_f = ChillerUSRTCalculator.calculate_single_chiller_usrt(
 ## 多區域泵加總
 
 ```python
-total = ChillerUSRTCalculator.zone_pumps_total([
+total = calculatorUSRT.zone_pumps_total([
     {"flow": 10, "return_temp": 12, "supply_temp": 7, "flow_unit": "CMH"},
     {"flow": 8,  "return_temp": 12, "supply_temp": 7, "flow_unit": "CMH"},
 ])
@@ -59,7 +59,7 @@ total = ChillerUSRTCalculator.zone_pumps_total([
 預設流量單位 CFM；負流量取絕對值。
 
 ```python
-ice_rt = ChillerUSRTCalculator.ice_melt(
+ice_rt = calculatorUSRT.ice_melt(
     -148.38, hex_return_temp=15.39, hex_supply_temp=9.93, flow_unit="CFM"
 )
 ```
@@ -68,7 +68,7 @@ ice_rt = ChillerUSRTCalculator.ice_melt(
 
 ```python
 import pandas as pd
-from pygreenbuild.metrics import ChillerUSRTCalculator
+from pygreenbuild.metrics import calculatorUSRT
 
 df = pd.DataFrame({
     "flow": [17.49, 20.0],
@@ -76,7 +76,7 @@ df = pd.DataFrame({
     "supply_temp": [8.86, 9.0],
 })
 
-df = ChillerUSRTCalculator.calculate_usrts(
+df = calculatorUSRT.calculate_usrts(
     df,
     flow_col="flow",
     return_temp_col="return_temp",
@@ -90,7 +90,7 @@ df = ChillerUSRTCalculator.calculate_usrts(
 算成效前若要保留原始熱量：
 
 ```python
-df = ChillerUSRTCalculator.calculate_usrts(
+df = calculatorUSRT.calculate_usrts(
     df, flow_col="flow", return_temp_col="return_temp", supply_temp_col="supply_temp",
     flow_unit="CMH", kw_to_usrt=False, result_col="冷房熱量_kW",
 )

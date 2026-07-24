@@ -1,4 +1,4 @@
-"""批次合併 CWA 觀測 JSON → DataFrame / CSV。
+"""批次合併 CODIS 觀測 JSON → DataFrame / CSV。
 
 預設合併各測站資料夾內全部 ``.json``；可用 ``pattern`` 正則篩選檔名。
 """
@@ -93,7 +93,7 @@ def _merge_station(
     return _sort_time(df)
 
 
-def cwa_merge(
+def codis_merge(
     base_path: str,
     output_dir: Optional[str] = None,
     station_ids: Optional[Iterable[str]] = None,
@@ -143,7 +143,7 @@ def cwa_merge(
     return results
 
 
-def cwa_hour_merge(
+def codis_hour_merge(
     base_path: str,
     output_dir: Optional[str] = None,
     station_ids: Optional[Iterable[str]] = None,
@@ -151,7 +151,7 @@ def cwa_hour_merge(
     to_csv: bool = True,
 ) -> Dict[str, pd.DataFrame]:
     """小時資料合併；輸出 ``{station_id}_hour.csv``。"""
-    return cwa_merge(
+    return codis_merge(
         base_path,
         output_dir=output_dir,
         station_ids=station_ids,
@@ -161,7 +161,7 @@ def cwa_hour_merge(
     )
 
 
-def cwa_day_merge(
+def codis_day_merge(
     base_path: str,
     output_dir: Optional[str] = None,
     station_ids: Optional[Iterable[str]] = None,
@@ -169,7 +169,7 @@ def cwa_day_merge(
     to_csv: bool = True,
 ) -> Dict[str, pd.DataFrame]:
     """日資料合併；輸出 ``{station_id}.csv``。"""
-    return cwa_merge(
+    return codis_merge(
         base_path,
         output_dir=output_dir,
         station_ids=station_ids,
@@ -179,7 +179,7 @@ def cwa_day_merge(
     )
 
 
-def cwa_month_merge(
+def codis_month_merge(
     base_path: str,
     output_dir: Optional[str] = None,
     station_ids: Optional[Iterable[str]] = None,
@@ -187,7 +187,7 @@ def cwa_month_merge(
     to_csv: bool = True,
 ) -> Dict[str, pd.DataFrame]:
     """月資料合併；輸出 ``{station_id}.csv``。"""
-    return cwa_merge(
+    return codis_merge(
         base_path,
         output_dir=output_dir,
         station_ids=station_ids,

@@ -12,7 +12,7 @@ from __future__ import annotations
 import pandas as pd
 
 
-class ChillerUSRT:
+class calculatorUSRT:
     """冷房需求（USRT）計算器。"""
 
     WATER_SPECIFIC_HEAT = 4.186  # kJ/(kg·℃)
@@ -244,6 +244,4 @@ class ChillerUSRT:
         return out
 
 
-ChillerUSRTCalculator = ChillerUSRT
-
-__all__ = ["ChillerUSRT", "ChillerUSRTCalculator"]
+__all__ = ["calculatorUSRT"]

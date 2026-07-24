@@ -3,7 +3,7 @@
 計算順序（由原始數據出發）::
 
     冷房熱量 (kW) = Flow(L/min) × |ΔT|(℃) × 4.186 / 60
-                    （由 ``ChillerUSRT`` 以 kw_to_usrt=False 求出）
+                    （由 ``calculatorUSRT`` 以 kw_to_usrt=False 求出）
     COP           = 冷房熱量 (kW) / 輸入功率 (kW)
     EER (kcal/h/W)= 冷房熱量 (kW) × 0.86 / 主機耗電 (kW)
     USRT          = 冷房熱量 (kW) × 0.284
@@ -17,7 +17,7 @@ import math
 
 import pandas as pd
 
-from .chiller_usrt import ChillerUSRT
+from .chiller_usrt import calculatorUSRT
 
 
 class ChillerPerformance:
@@ -26,7 +26,7 @@ class ChillerPerformance:
     COP、EER 直接用原始熱量值（kW）；耗電率可選原始熱量或已轉換 USRT。
     """
 
-    KW_TO_USRT_FACTOR = ChillerUSRT.KW_TO_USRT_FACTOR  # 0.284
+    KW_TO_USRT_FACTOR = calculatorUSRT.KW_TO_USRT_FACTOR  # 0.284
     KW_TO_KCAL_H_FACTOR = 0.86  # EER：1 kW ≈ 0.86 kcal/h
 
     # ------------------------------------------------------------------
@@ -41,7 +41,7 @@ class ChillerPerformance:
         Parameters
         ----------
         cooling_kw :
-            原始冷房熱量（kW），由 ``ChillerUSRT(..., kw_to_usrt=False)`` 求出。
+            原始冷房熱量（kW），由 ``calculatorUSRT(..., kw_to_usrt=False)`` 求出。
         power_kw :
             冰機輸入功率合計（kW）。
         """
@@ -156,7 +156,7 @@ class ChillerPerformance:
         Parameters
         ----------
         df :
-            需含冷房熱量 kW 欄（可由 ``ChillerUSRT.calculate_usrts(..., kw_to_usrt=False)``
+            需含冷房熱量 kW 欄（可由 ``calculatorUSRT.calculate_usrts(..., kw_to_usrt=False)``
             產出），以及一或多個功率欄（kW）。
         cooling_kw_col :
             原始冷房熱量（kW）欄位名。
@@ -226,6 +226,6 @@ class ChillerPerformance:
         return out
 
 
-ChillerPerformanceCalculator = ChillerPerformance
+ChillerKPI = ChillerPerformance
 
-__all__ = ["ChillerPerformance", "ChillerPerformanceCalculator"]
+__all__ = ["ChillerPerformance", "ChillerKPI"]

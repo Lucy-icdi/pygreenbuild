@@ -59,8 +59,8 @@ ingestion → parsers → transform → load
 
 | 模組 | Class | 用途 |
 |------|-------|------|
-| `chiller_usrt.py` | `ChillerUSRT` / `ChillerUSRTCalculator` | 冷房需求 USRT（含融冰、區域泵） |
-| `chiller_performance.py` | `ChillerPerformance` / `ChillerPerformanceCalculator` | COP、EER、耗電率 |
+| `chiller_usrt.py` | `calculatorUSRT` | 冷房需求 USRT（含融冰、區域泵） |
+| `chiller_performance.py` | `ChillerPerformance` / `ChillerKPI`（`from pygreenbuild import ChillerKPI`） | COP、EER、耗電率 |
 
 詳見 [冷房需求 USRT](chiller-usrt.md)、[冰水主機成效](chiller-performance.md)。
 
