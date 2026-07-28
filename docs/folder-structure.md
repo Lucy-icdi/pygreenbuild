@@ -46,6 +46,7 @@ src/pygreenbuild/
 │   ├─ mappings.py                    # （規劃）
 │   ├─ detector.py                    # （規劃）
 │   ├─ transform_time.py              # （既有）日期／時間／日期時間欄位轉換
+│   ├─ fill_time_gaps.py              # （既有）依頻率補齊缺失時間列
 │   ├─ json_to_dataframe.py           # （既有）
 │   └─ __init__.py
 │
@@ -124,7 +125,7 @@ data/                                 # （規劃）本機資料工作區（通�
 
 ### `src/pygreenbuild/transform/`
 
-欄位對應、格式偵測與正規化，產出標準表格。規劃補齊 `mappings`／`detector`；時間欄位轉換見既有 `transform_time`。
+欄位對應、格式偵測與正規化，產出標準表格。規劃補齊 `mappings`／`detector`；時間欄位轉換見既有 `transform_time`；時間缺口補齊見既有 `fill_time_gaps`。
 
 ### `src/pygreenbuild/load/`
 

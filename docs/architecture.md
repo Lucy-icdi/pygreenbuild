@@ -48,6 +48,7 @@ ingestion → parsers → transform → load
 
 - `mappings.py`、`detector.py`（規劃）
 - `transform_time.py`：純日期／純時間／日期時間欄位轉換
+- `fill_time_gaps.py`：依手動指定頻率補齊缺失時間列並填值
 - `json_to_dataframe.py`：JSON → DataFrame
 
 ### load（輸出層）
