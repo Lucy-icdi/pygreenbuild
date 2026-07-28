@@ -11,6 +11,7 @@
 | 篇章 | 內容 |
 |------|------|
 | [架構概覽](architecture.md) | ETL 與 metrics 層級定位 |
+| [專案資料夾規劃](folder-structure.md) | 未來目標目錄樹與落地順序 |
 | [天氣爬蟲](weather-crawler.md) | `codis_yearly`／`monthly`／`daily` |
 | [冷房需求 USRT](chiller-usrt.md) | 流量 × ΔT → 熱量 kW／USRT |
 | [冰水主機成效](chiller-performance.md) | COP、EER、耗電率 |

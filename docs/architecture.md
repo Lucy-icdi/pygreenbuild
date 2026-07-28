@@ -64,7 +64,7 @@ ingestion → parsers → transform → load
 
 詳見 [冷房需求 USRT](chiller-usrt.md)、[冰水主機成效](chiller-performance.md)。
 
-## 目錄對照（規劃）
+## 目錄對照（摘要）
 
 ```
 src/pygreenbuild/
@@ -80,4 +80,4 @@ src/pygreenbuild/
    └─ chiller_performance.py
 ```
 
-> 後續還規劃 `features`、`models`、`api`、`config`、`utils` 等模組。更細的目錄規劃見專案根目錄 [`tree.csv`](../tree.csv)。
+> 後續還規劃 `features`、`models`、`api`、`config`、`utils`、`scripts/`、`data/` 等。完整目標目錄樹、狀態標記與落地順序見 [專案資料夾規劃](folder-structure.md)。

@@ -8,7 +8,7 @@ import requests
 from bs4 import BeautifulSoup
 
 
-def cwa_stations(i=0, columns_to_export=None, output_dir=None, new_columns=None):
+def cwa_stations(open=True, output_dir=None,columns_to_export=None, new_columns=None):
     # 1. 設定網址和 Headers
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
@@ -39,14 +39,15 @@ def cwa_stations(i=0, columns_to_export=None, output_dir=None, new_columns=None)
 
         # --- 判斷表格索引 i 並決定檔名開頭  ---
         station_prefix = "cwa_station"
+        table_index = 0 if open is True else 1
 
-        if i == 0:
+        if open == True:
             station_prefix = "現有站"
-        elif i == 1:
+        elif open == False:
             station_prefix = "撤銷站"
 
         print(
-            f"--- 準備抓取：{station_prefix} (索引 {i}) | 網頁日期: {extracted_date_str if extracted_date_str else formatted_date} ---"
+            f"--- 準備抓取：{station_prefix} (索引 {table_index}) | 網頁日期: {extracted_date_str if extracted_date_str else formatted_date} ---"
         )
 
         # 3. 根據站別、日期建立檔案路徑
@@ -60,7 +61,7 @@ def cwa_stations(i=0, columns_to_export=None, output_dir=None, new_columns=None)
 
         # --- 讀取表格資料並存檔 ---
         tables = pd.read_html(io.StringIO(html_content))
-        target_table_index = i
+        target_table_index = table_index
 
         if len(tables) > target_table_index:
             df = tables[target_table_index]
