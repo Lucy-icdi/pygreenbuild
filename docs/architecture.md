@@ -46,7 +46,8 @@ ingestion → parsers → transform → load
 
 對已解析資料做標準化，對齊欄位命名與資料品質規則。
 
-- `mappings.py`、`detector.py`、`normalize.py`（規劃）
+- `mappings.py`、`detector.py`（規劃）
+- `transform_time.py`：純日期／純時間／日期時間欄位轉換
 - `json_to_dataframe.py`：JSON → DataFrame
 
 ### load（輸出層）

@@ -45,7 +45,7 @@ src/pygreenbuild/
 ├─ transform/                         # （既有／升級）轉換／正規化層
 │   ├─ mappings.py                    # （規劃）
 │   ├─ detector.py                    # （規劃）
-│   ├─ normalize.py                   # （規劃）
+│   ├─ transform_time.py              # （既有）日期／時間／日期時間欄位轉換
 │   ├─ json_to_dataframe.py           # （既有）
 │   └─ __init__.py
 │
@@ -124,7 +124,7 @@ data/                                 # （規劃）本機資料工作區（通�
 
 ### `src/pygreenbuild/transform/`
 
-欄位對應、格式偵測與正規化，產出標準表格。規劃補齊 `mappings`／`detector`／`normalize`。
+欄位對應、格式偵測與正規化，產出標準表格。規劃補齊 `mappings`／`detector`；時間欄位轉換見既有 `transform_time`。
 
 ### `src/pygreenbuild/load/`
 
@@ -154,7 +154,7 @@ ML 相關：資料合併、特徵工程，以及訓練／推論。在標準資�
 
 ## 建議落地順序
 
-1. **補齊 ETL 核心**：`parsers.factory_parser`、`transform`（mappings／detector／normalize）、`load`（to_csv／to_database）
+1. **補齊 ETL 核心**：`parsers.factory_parser`、`transform`（mappings／detector）、`load`（to_csv／to_database）
 2. **統一設定與工具**：`config/`、`utils/`
 3. **管線腳本**：`scripts/run_pipeline.py` 等入口
 4. **特徵與模型**：`features/` → `models/`
