@@ -15,6 +15,7 @@
 | [天氣爬蟲](weather-crawler.md) | `codis_yearly`／`monthly`／`daily` |
 | [時間欄位轉換](transform-time.md) | 純日期／純時間／日期時間 |
 | [時間缺口補齊](fill-time-gaps.md) | 依頻率插入缺失時間列並填值 |
+| [PMV / PPD 舒適度](pmv.md) | ISO 7730 與 ASHRAE 55 的 PMV／PPD 計算 |
 | [冷房需求 USRT](chiller-usrt.md) | 流量 × ΔT → 熱量 kW／USRT |
 | [冰水主機成效](chiller-performance.md) | COP、EER、耗電率 |
 
