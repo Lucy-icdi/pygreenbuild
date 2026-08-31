@@ -41,6 +41,10 @@ _DATETIME_FORMATS: tuple[str, ...] = (
     "%Y-%m-%dT%H:%M:%S.%f",
 )
 
+_DATE_OUT_FMT = "%Y-%m-%d"
+_TIME_OUT_FMT = "%H:%M:%S"
+_DATETIME_OUT_FMT = "%Y-%m-%d %H:%M:%S"
+
 T = TypeVar("T")
 
 
@@ -77,6 +81,65 @@ def _strptime_first(text: str, formats: tuple[str, ...]) -> datetime | None:
     return None
 
 
+def _is_2359(hour: int, minute: int) -> bool:
+    """判斷是否為 ``23:59`` 這一分鐘（秒／微秒不論）。"""
+    return hour == 23 and minute == 59
+
+
+def _roll_past_2359_timestamp(ts: pd.Timestamp) -> pd.Timestamp:
+    """``23:59:00``–``23:59:59`` 視為隔天 ``00:00:00``。"""
+    if pd.isna(ts):
+        return ts
+    if _is_2359(ts.hour, ts.minute):
+        return ts.normalize() + pd.Timedelta(days=1)
+    return ts
+
+
+def _roll_past_2359_time(t: time) -> time:
+    """``23:59:00``–``23:59:59`` 視為 ``00:00:00``。"""
+    if _is_2359(t.hour, t.minute):
+        return time(0, 0, 0)
+    return t
+
+
+def _roll_past_2359_series(series: pd.Series) -> pd.Series:
+    """對 datetime 序列套用與 ``_roll_past_2359_timestamp`` 相同的規則。"""
+    ts = pd.to_datetime(series)
+    mask = (ts.dt.hour == 23) & (ts.dt.minute == 59)
+    out = ts.copy()
+    out.loc[mask] = ts.loc[mask].dt.normalize() + pd.Timedelta(days=1)
+    return out
+
+
+def _format_date_value(value: date | None, *, as_string: bool) -> date | str | None:
+    """依 ``as_string`` 決定回傳 ``date`` 或 ``YYYY-MM-DD`` 字串。"""
+    if value is None:
+        return None
+    if as_string:
+        return value.strftime(_DATE_OUT_FMT)
+    return value
+
+
+def _format_time_value(value: time | None, *, as_string: bool) -> time | str | None:
+    """依 ``as_string`` 決定回傳 ``time`` 或 ``HH:MM:SS`` 字串。"""
+    if value is None:
+        return None
+    if as_string:
+        return value.strftime(_TIME_OUT_FMT)
+    return value
+
+
+def _format_datetime_value(
+    value: pd.Timestamp, *, as_string: bool
+) -> pd.Timestamp | str | None:
+    """依 ``as_string`` 決定回傳 ``Timestamp`` 或 ``YYYY-MM-DD HH:MM:SS`` 字串。"""
+    if pd.isna(value):
+        return None if as_string else value
+    if as_string:
+        return pd.Timestamp(value).strftime(_DATETIME_OUT_FMT)
+    return value
+
+
 def _parse_date_value(value: object, *, errors: ErrorsMode) -> date | None:
     """將單一值解析為 ``datetime.date``。"""
     if _is_missing(value):
@@ -111,15 +174,18 @@ def _parse_date_value(value: object, *, errors: ErrorsMode) -> date | None:
 
 
 def _parse_time_value(value: object, *, errors: ErrorsMode) -> time | None:
-    """將單一值解析為 ``datetime.time``。"""
+    """將單一值解析為 ``datetime.time``。
+
+    ``23:59:00``–``23:59:59`` 視為 ``00:00:00``（代表隔天午夜）。
+    """
     if _is_missing(value):
         return None
     if isinstance(value, time) and not isinstance(value, datetime):
-        return value
+        return _roll_past_2359_time(value)
     if isinstance(value, pd.Timestamp):
-        return value.time()
+        return _roll_past_2359_time(value.time())
     if isinstance(value, datetime):
-        return value.time()
+        return _roll_past_2359_time(value.time())
     if isinstance(value, date) and not isinstance(value, datetime):
         if errors == "raise":
             raise ValueError(f"無法自純日期解析時間: {value!r}")
@@ -128,29 +194,32 @@ def _parse_time_value(value: object, *, errors: ErrorsMode) -> time | None:
     text = _as_text(value)
     parsed = _strptime_first(text, _TIME_FORMATS)
     if parsed is not None:
-        return parsed.time()
+        return _roll_past_2359_time(parsed.time())
 
     # 若是完整日期時間字串，取時間部分
     parsed_dt = _strptime_first(text, _DATETIME_FORMATS)
     if parsed_dt is not None:
-        return parsed_dt.time()
+        return _roll_past_2359_time(parsed_dt.time())
 
     fallback = pd.to_datetime(text, errors="coerce")
     if pd.isna(fallback):
         if errors == "raise":
             raise ValueError(f"無法解析為時間: {value!r}")
         return None
-    return pd.Timestamp(fallback).time()
+    return _roll_past_2359_time(pd.Timestamp(fallback).time())
 
 
 def _parse_datetime_value(value: object, *, errors: ErrorsMode) -> pd.Timestamp:
-    """將單一值解析為 ``pd.Timestamp``。"""
+    """將單一值解析為 ``pd.Timestamp``。
+
+    ``23:59:00``–``23:59:59`` 視為隔天 ``00:00:00``。
+    """
     if _is_missing(value):
         return pd.NaT
     if isinstance(value, pd.Timestamp):
-        return value
+        return _roll_past_2359_timestamp(value)
     if isinstance(value, datetime):
-        return pd.Timestamp(value)
+        return _roll_past_2359_timestamp(pd.Timestamp(value))
     if isinstance(value, date) and not isinstance(value, datetime):
         return pd.Timestamp(value)
     if isinstance(value, time):
@@ -161,7 +230,7 @@ def _parse_datetime_value(value: object, *, errors: ErrorsMode) -> pd.Timestamp:
     text = _as_text(value)
     parsed = _strptime_first(text, _DATETIME_FORMATS)
     if parsed is not None:
-        return pd.Timestamp(parsed)
+        return _roll_past_2359_timestamp(pd.Timestamp(parsed))
 
     # 僅有日期時，時間補 00:00:00
     parsed_date = _strptime_first(text, _DATE_FORMATS)
@@ -173,7 +242,7 @@ def _parse_datetime_value(value: object, *, errors: ErrorsMode) -> pd.Timestamp:
         if errors == "raise":
             raise ValueError(f"無法解析為日期時間: {value!r}")
         return pd.NaT
-    return pd.Timestamp(fallback)
+    return _roll_past_2359_timestamp(pd.Timestamp(fallback))
 
 
 def _transform_column(
@@ -202,6 +271,7 @@ def to_date_column(
     *,
     result_col: str | None = None,
     errors: ErrorsMode = "raise",
+    as_string: bool = False,
 ) -> pd.DataFrame:
     """將 DataFrame 指定欄位轉換為純日期（``datetime.date``）。
 
@@ -224,12 +294,15 @@ def to_date_column(
     errors :
         解析失敗時的行為：``"raise"`` 拋出例外，``"coerce"`` 寫入 ``None``
         （單位：不適用）。
+    as_string :
+        ``True`` 時輸出 ``YYYY-MM-DD`` 字串；``False``（預設）維持 ``datetime.date``
+        （單位：不適用）。
 
     Returns
     -------
     pd.DataFrame
-        含純日期欄位的新 DataFrame（不修改原表）。欄位元素為 ``datetime.date``
-        或空值 ``None``（單位：不適用）。
+        含純日期欄位的新 DataFrame（不修改原表）。欄位元素為 ``datetime.date``、
+        字串（``as_string=True``）或空值 ``None``（單位：不適用）。
 
     Raises
     ------
@@ -243,7 +316,9 @@ def to_date_column(
         column,
         result_col=result_col,
         errors=errors,
-        parser=lambda v: _parse_date_value(v, errors=errors),
+        parser=lambda v: _format_date_value(
+            _parse_date_value(v, errors=errors), as_string=as_string
+        ),
     )
 
 
@@ -253,6 +328,7 @@ def to_time_column(
     *,
     result_col: str | None = None,
     errors: ErrorsMode = "raise",
+    as_string: bool = False,
 ) -> pd.DataFrame:
     """將 DataFrame 指定欄位轉換為純時間（``datetime.time``）。
 
@@ -262,6 +338,9 @@ def to_time_column(
     - ``"140015"``
 
     若值為完整日期時間字串，則只取時間部分。
+
+    特殊規則：``23:59:00``–``23:59:59`` 視為 ``00:00:00``
+    （該分鐘代表隔天午夜，例如 ``23:59:01`` → ``00:00:00``）。
 
     Parameters
     ----------
@@ -274,12 +353,15 @@ def to_time_column(
     errors :
         解析失敗時的行為：``"raise"`` 拋出例外，``"coerce"`` 寫入 ``None``
         （單位：不適用）。
+    as_string :
+        ``True`` 時輸出 ``HH:MM:SS`` 字串；``False``（預設）維持 ``datetime.time``
+        （單位：不適用）。
 
     Returns
     -------
     pd.DataFrame
-        含純時間欄位的新 DataFrame（不修改原表）。欄位元素為 ``datetime.time``
-        或空值 ``None``（單位：不適用）。
+        含純時間欄位的新 DataFrame（不修改原表）。欄位元素為 ``datetime.time``、
+        字串（``as_string=True``）或空值 ``None``（單位：不適用）。
 
     Raises
     ------
@@ -293,7 +375,9 @@ def to_time_column(
         column,
         result_col=result_col,
         errors=errors,
-        parser=lambda v: _parse_time_value(v, errors=errors),
+        parser=lambda v: _format_time_value(
+            _parse_time_value(v, errors=errors), as_string=as_string
+        ),
     )
 
 
@@ -303,6 +387,7 @@ def to_datetime_column(
     *,
     result_col: str | None = None,
     errors: ErrorsMode = "raise",
+    as_string: bool = False,
 ) -> pd.DataFrame:
     """將 DataFrame 指定欄位轉換為日期時間（``datetime64``）。
 
@@ -316,6 +401,9 @@ def to_datetime_column(
 
     若值僅有日期（無時間），時間會補為 ``00:00:00``。
 
+    特殊規則：``23:59:00``–``23:59:59`` 視為隔天 ``00:00:00``
+    （例如 ``2025-08-15 23:59:01`` → ``2025-08-16 00:00:00``）。
+
     Parameters
     ----------
     df :
@@ -327,12 +415,15 @@ def to_datetime_column(
     errors :
         解析失敗時的行為：``"raise"`` 拋出例外，``"coerce"`` 寫入 ``NaT``
         （單位：不適用）。
+    as_string :
+        ``True`` 時輸出 ``YYYY-MM-DD HH:MM:SS`` 字串；``False``（預設）維持
+        ``datetime64``／``Timestamp``（單位：不適用）。
 
     Returns
     -------
     pd.DataFrame
-        含日期時間欄位的新 DataFrame（不修改原表）。時間單位為納秒解析度的
-        pandas Timestamp（顯示為年月日與時分秒）。
+        含日期時間欄位的新 DataFrame（不修改原表）。``as_string=False`` 時為納秒
+        解析度的 pandas Timestamp；``as_string=True`` 時為字串（空值為 ``None``）。
 
     Raises
     ------
@@ -346,5 +437,8 @@ def to_datetime_column(
         column,
         result_col=result_col,
         errors=errors,
-        parser=lambda v: _parse_datetime_value(v, errors=errors),
+        parser=lambda v: _format_datetime_value(
+            _parse_datetime_value(v, errors=errors), as_string=as_string
+        ),
     )
+

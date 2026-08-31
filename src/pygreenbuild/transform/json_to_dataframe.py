@@ -1,8 +1,15 @@
-import numpy as np
+"""將中央氣象署（CWA）CODIS 觀測 JSON 轉成中文欄位 DataFrame。"""
+
+from __future__ import annotations
+
+from typing import Any, Mapping, Sequence
+
 import pandas as pd
 from pandas import json_normalize
 
-_CWA_HOUR_MAPPING = {
+from pygreenbuild.transform.transform_time import _roll_past_2359_series
+
+_CWA_HOUR_MAPPING: dict[str, str | None] = {
     "觀測時間": "DataTime",
     "測站氣壓": "StationPressure.Instantaneous",
     "海平面氣壓": "SeaLevelPressure.Instantaneous",
@@ -26,7 +33,7 @@ _CWA_HOUR_MAPPING = {
     "紫外線指數": "UVIndex.Accumulation",
 }
 
-_CWA_DAY_MAPPING = {
+_CWA_DAY_MAPPING: dict[str, str | None] = {
     "觀測時間": "DataDate",
     "測站氣壓": "StationPressure.Mean",
     "海平面氣壓": "SeaLevelPressure.Mean",
@@ -71,7 +78,7 @@ _CWA_DAY_MAPPING = {
     "地溫100cm": "SoilTemperatureAt100cm.Mean",
 }
 
-_CWA_MONTH_MAPPING = {
+_CWA_MONTH_MAPPING: dict[str, str | None] = {
     "觀測月份": "DataYearMonth",
     "測站氣壓": "StationPressure.Mean",
     "海平面氣壓": "SeaLevelPressure.Mean",
@@ -116,7 +123,7 @@ _CWA_MONTH_MAPPING = {
     "地溫100cm": "SoilTemperatureAt100cm.Mean",
 }
 
-_NA_VALUES = [
+_NA_VALUES: list[object] = [
     "",
     "NULL",
     "null",
@@ -149,7 +156,7 @@ _NA_VALUES = [
 _TIME_COL = "觀測時間"
 _PRECIPITATION_COL = "降水量"
 
-_TEMP_COLUMNS_LT_MINUS_50 = {
+_TEMP_COLUMNS_LT_MINUS_50: set[str] = {
     "露點溫度",
     "濕球溫度",
     "氣溫",
@@ -165,7 +172,8 @@ _TEMP_COLUMNS_LT_MINUS_50 = {
 }
 
 
-def _detect_mapping(data):
+def _detect_mapping(data: Sequence[Mapping[str, Any]]) -> dict[str, str | None]:
+    """依 JSON 鍵自動選擇小時／日／月欄位對應表。"""
     if not data:
         raise ValueError("資料為空")
 
@@ -183,27 +191,29 @@ def _detect_mapping(data):
     raise ValueError("未知資料格式")
 
 
-def _adjust_observation_time(df):
+def _adjust_observation_time(df: pd.DataFrame) -> pd.DataFrame:
+    """``觀測時間`` 為 ``23:59:00``–``23:59:59`` 時改為隔天 ``00:00:00``。"""
     if _TIME_COL not in df.columns:
         return df
 
-    df[_TIME_COL] = pd.to_datetime(df[_TIME_COL])
-    mask = (df[_TIME_COL].dt.hour == 23) & (df[_TIME_COL].dt.minute == 59)
-    df.loc[mask, _TIME_COL] = df.loc[mask, _TIME_COL] + pd.Timedelta(minutes=1)
-    df[_TIME_COL] = df[_TIME_COL].dt.strftime("%Y-%m-%dT%H:%M:%S")
+    rolled = _roll_past_2359_series(df[_TIME_COL])
+    df[_TIME_COL] = rolled.dt.strftime("%Y-%m-%dT%H:%M:%S")
     return df
 
 
-def _is_time_column(col):
+def _is_time_column(col: str) -> bool:
+    """判斷是否為時間類欄位（清理數值時略過）。"""
     return col == _TIME_COL or col == "觀測月份" or col.endswith("時間")
 
 
-def _mask_below_threshold(df, col, threshold):
+def _mask_below_threshold(df: pd.DataFrame, col: str, threshold: float) -> None:
+    """將可轉數值且小於 ``threshold`` 的儲存格設為 ``pd.NA``。"""
     numeric = pd.to_numeric(df[col], errors="coerce")
     df.loc[numeric < threshold, col] = pd.NA
 
 
-def _clean_values(df):
+def _clean_values(df: pd.DataFrame) -> pd.DataFrame:
+    """套用缺值代碼替換、微量降水 ``T``→0.4，以及不合理數值遮罩。"""
     if _PRECIPITATION_COL in df.columns:
         df[_PRECIPITATION_COL] = df[_PRECIPITATION_COL].replace("T", 0.4)
 
@@ -220,7 +230,58 @@ def _clean_values(df):
     return df
 
 
-def json_to_dataframe(data, column_mapping=None):
+def _unify_missing(df: pd.DataFrame) -> pd.DataFrame:
+    """將 ``NaN``／``None`` 等統一為 pandas 系統遺失值 ``pd.NA``。
+
+    透過 ``convert_dtypes()`` 轉成 nullable 型別，顯示為 ``<NA>``，
+    與浮點 ``nan`` 區隔並利於後續缺值判斷。
+    """
+    return df.convert_dtypes()
+
+
+def json_to_dataframe(
+    data: Sequence[Mapping[str, Any]],
+    column_mapping: Mapping[str, str | None] | None = None,
+) -> pd.DataFrame:
+    """將 CWA／CODIS 觀測 JSON（list of dict）轉成中文欄位 DataFrame。
+
+    依第一筆資料的鍵自動辨識格式：
+
+    - 含 ``DataTime`` → 小時報（``_CWA_HOUR_MAPPING``）
+    - 含 ``DataDate`` → 日報（``_CWA_DAY_MAPPING``）
+    - 含 ``DataYearMonth`` → 月報（``_CWA_MONTH_MAPPING``）
+
+    亦可自行傳入 ``column_mapping``（中文欄名 → JSON 扁平路徑；``None`` 表示該欄恒為空）。
+
+    轉換後會：
+
+    - 將 ``觀測時間`` 為 ``23:59:00``–``23:59:59`` 者改為隔天 ``00:00:00``
+    - 降水量 ``"T"``（微量）改為 ``0.4``
+    - 常見缺測代碼（如 ``-99``、``"x"``）改為 ``NA``
+    - 溫度相關欄小於 ``-50``、其餘非時間數值欄小於 ``0`` 改為 ``NA``
+    - 將 ``NaN``／``None`` 統一為系統遺失值 ``pd.NA``（顯示 ``<NA>``）
+    - 刪除整欄皆為空值的欄位
+
+    Parameters
+    ----------
+    data :
+        觀測紀錄列表，每筆為巢狀或已扁平化的 dict（單位：不適用）。
+    column_mapping :
+        中文欄名到 JSON 路徑的對應；``None``（預設）則自動偵測（單位：不適用）。
+        路徑值為 ``None`` 時該欄填入空值（最終會因整欄空白而被刪除）。
+
+    Returns
+    -------
+    pd.DataFrame
+        中文欄位觀測表（已去掉整欄空白欄）。時間欄以字串
+        ``YYYY-MM-DDTHH:MM:SS`` 表示（若有 ``觀測時間``）；缺測統一為
+        ``pd.NA``（單位：依欄位而定）。
+
+    Raises
+    ------
+    ValueError
+        ``data`` 為空，或無法辨識為小時／日／月格式（且未提供 ``column_mapping``）。
+    """
     if column_mapping is None:
         column_mapping = _detect_mapping(data)
 
@@ -229,12 +290,13 @@ def json_to_dataframe(data, column_mapping=None):
     df_selected = pd.DataFrame()
 
     for col_name, json_path in column_mapping.items():
-        if json_path in df.columns:
+        if json_path is not None and json_path in df.columns:
             df_selected[col_name] = df[json_path]
         else:
-            df_selected[col_name] = np.nan
+            df_selected[col_name] = pd.NA
 
     df_selected = _adjust_observation_time(df_selected)
     df_selected = _clean_values(df_selected)
+    df_selected = _unify_missing(df_selected)
 
-    return df_selected
+    return df_selected.dropna(axis=1, how="all")

@@ -30,9 +30,9 @@ ingestion → parsers → transform → load
 
 - **weather_crawler**：氣象爬蟲（CODIS、Cookie、CWA 測站、GreenBIM／ICDI API）
 - **email**：郵件來源讀取
-- **ems_db**：廠區或 EMS 資料庫讀取
+- **ems_db**：廠區或 EMS 資料庫讀取（`fill_sql_table_na`：查表並填補孤立 NA，見 [fill-table-na.md](fill-table-na.md)）
 
-原則：此層只做「拿到資料」，不做欄位清洗或業務轉換。
+原則：此層以取得資料為主；`fill_sql_table_na` 為讀取後的輕量填補，DataFrame 版見 transform。
 
 ### parsers（格式解析層）
 
@@ -49,11 +49,16 @@ ingestion → parsers → transform → load
 - `mappings.py`、`detector.py`（規劃）
 - `transform_time.py`：純日期／純時間／日期時間欄位轉換
 - `fill_time_gaps.py`：依手動指定頻率補齊缺失時間列並填值
-- `json_to_dataframe.py`：JSON → DataFrame
+- `fill_dataframe_na.py`：回傳已填補的新 DataFrame（見 [fill-table-na.md](fill-table-na.md)）
+- `json_to_dataframe.py`：CODIS 觀測 JSON → 中文欄位 DataFrame（見 [json-to-dataframe.md](json-to-dataframe.md)）
+- `pmv.py`：ISO 7730／ASHRAE 55 的 PMV／PPD 舒適度計算（見 [pmv.md](pmv.md)）
 
 ### load（輸出層）
 
 將轉換完成的資料寫到 CSV、資料庫等目的地（與來源解耦）。
+
+- `codis_data_merge.py`：合併 CODIS 日／時／月資料
+- `apply_filled_na.py`：將 `fill_sql_table_na` 填補結果 UPDATE 回資料庫或匯出 SQL（見 [fill-table-na.md](fill-table-na.md)）
 
 ### metrics（成效計算層）
 
@@ -76,6 +81,7 @@ src/pygreenbuild/
 │  └─ ems_db/
 ├─ parsers/            # 格式解析層
 ├─ transform/          # 轉換／正規化層
+│  └─ pmv.py           # PMV／PPD 舒適度
 ├─ load/               # 輸出層
 └─ metrics/            # 成效計算層
    ├─ chiller_usrt.py

@@ -22,6 +22,7 @@ src/pygreenbuild/
 │   │   ├─ codis_cookie_manager.py
 │   │   ├─ codis_crawler_tojson.py
 │   │   ├─ cwa_stations_crawler.py
+│   │   ├─ cwa_township_forecast.py
 │   │   ├─ greenbim_api_export.py
 │   │   ├─ icdi_api_download.py
 │   │   └─ __init__.py
@@ -61,6 +62,18 @@ src/pygreenbuild/
 │   ├─ chiller_performance.py
 │   └─ __init__.py
 │
+├─ api/                               # （既有）服務介面（MCP + 未來 REST 共用）
+│   ├─ serialization.py               # （既有）
+│   ├─ services/                      # （既有）
+│   ├─ main.py                        # （規劃）FastAPI REST 入口
+│   ├─ schemas.py                     # （規劃）
+│   └─ __init__.py
+│
+├─ mcp/                               # （既有）MCP Server
+│   ├─ server.py                      # 統一 MCP 窗口
+│   ├─ tools/
+│   └─ __init__.py
+│
 ├─ features/                          # （規劃）特徵工程／ML 前處理
 │   ├─ merge_data.py
 │   ├─ feature_engineering.py
@@ -69,11 +82,6 @@ src/pygreenbuild/
 ├─ models/                            # （規劃）模型訓練與推論
 │   ├─ train.py
 │   ├─ predict.py
-│   └─ __init__.py
-│
-├─ api/                               # （規劃）服務介面
-│   ├─ main.py
-│   ├─ schemas.py
 │   └─ __init__.py
 │
 ├─ config/                            # （規劃）設定集中管理
@@ -91,8 +99,10 @@ src/pygreenbuild/
 倉庫根目錄另規劃：
 
 ```
-scripts/                              # （規劃）可執行入口腳本
-├─ run_weather_ingestion.py
+scripts/                              # 可執行入口腳本
+├─ run_mcp_server.py                  # （既有）MCP Server 啟動
+├─ python_functions.R                 # （既有）R 橋接
+├─ run_weather_ingestion.py           # （規劃）
 ├─ run_email_ingestion.py
 ├─ run_pipeline.py                    # parser + transform + load
 ├─ run_feature.py
@@ -115,7 +125,7 @@ data/                                 # （規劃）本機資料工作區（通�
 
 | 子目錄 | 狀態 | 說明 |
 |--------|------|------|
-| `weather_crawler/` | 既有 | CODIS、Cookie、CWA 測站、GreenBIM／ICDI API |
+| `weather_crawler/` | 既有 | CODIS、Cookie、CWA 測站、CWA 鄉鎮預報、GreenBIM／ICDI API |
 | `email/` | 既有 | 郵件讀取 |
 | `ems_db/` | 既有 | 廠區或 EMS 資料庫讀取（檔名 `factory_db.py`） |
 

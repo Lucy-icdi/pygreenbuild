@@ -71,6 +71,32 @@ class TestFillTimeGapsMethods:
         assert gap["value"] == 11.0
         assert pd.isna(gap["label"])
 
+    def test_neighbor_mean_rounds_to_neighbor_decimal_places(self) -> None:
+        df = pd.DataFrame(
+            {
+                "ts": pd.to_datetime(
+                    ["2025-08-15 10:00:00", "2025-08-15 12:00:00"]
+                ),
+                "value": [20.1, 20.2],
+            }
+        )
+        out = fill_time_gaps(df, "ts", "h", fill_method="neighbor_mean")
+        gap = out.loc[out["ts"] == pd.Timestamp("2025-08-15 11:00:00")].iloc[0]
+        assert gap["value"] == 20.2
+
+    def test_neighbor_mean_preserves_two_decimal_places(self) -> None:
+        df = pd.DataFrame(
+            {
+                "ts": pd.to_datetime(
+                    ["2025-08-15 10:00:00", "2025-08-15 12:00:00"]
+                ),
+                "value": [1.25, 1.35],
+            }
+        )
+        out = fill_time_gaps(df, "ts", "h", fill_method="neighbor_mean")
+        gap = out.loc[out["ts"] == pd.Timestamp("2025-08-15 11:00:00")].iloc[0]
+        assert gap["value"] == 1.30
+
     def test_constant(self) -> None:
         out = fill_time_gaps(
             _hourly_base(),

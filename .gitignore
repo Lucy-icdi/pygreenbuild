@@ -226,3 +226,6 @@ __marimo__/
 /dataSources.local.xml
 # 基於編輯器的 HTTP 客戶端請求
 /httpRequests/
+
+# Obsidian
+docs/.obsidian/

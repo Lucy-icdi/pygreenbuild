@@ -6,6 +6,8 @@ from typing import Literal
 
 import pandas as pd
 
+from pygreenbuild.transform.fill_surrounded_na import _neighbor_mean_value
+
 FillMethod = Literal[
     "na",
     "ffill",
@@ -65,7 +67,7 @@ def _prepare_datetime_series(
 
 
 def _apply_neighbor_mean(frame: pd.DataFrame) -> pd.DataFrame:
-    """對數值欄以「前後筆平均值」填補缺失；非數值欄維持 ``NA``。"""
+    """對數值欄以「前後筆平均」填補缺失，小數位對齊兩側較長者；非數值欄維持 ``NA``。"""
     out = frame.copy()
     numeric_cols = out.select_dtypes(include="number").columns
     for col in numeric_cols:
@@ -73,7 +75,13 @@ def _apply_neighbor_mean(frame: pd.DataFrame) -> pd.DataFrame:
         prev_vals = s.shift(1)
         next_vals = s.shift(-1)
         mask = s.isna() & prev_vals.notna() & next_vals.notna()
-        out.loc[mask, col] = (prev_vals[mask] + next_vals[mask]) / 2.0
+        if not bool(mask.any()):
+            continue
+        filled_vals = [
+            _neighbor_mean_value(prev_vals.loc[i], next_vals.loc[i])
+            for i in s.index[mask]
+        ]
+        out.loc[mask, col] = filled_vals
     return out
 
 
@@ -133,7 +141,8 @@ def fill_time_gaps(
         - ``"na"``：維持 ``NA``（預設）
         - ``"ffill"``：以前一筆代替
         - ``"bfill"``：以後一筆代替
-        - ``"neighbor_mean"``：前後筆平均值（僅數值欄；缺任一邊則維持 ``NA``）
+        - ``"neighbor_mean"``：前後筆平均值（僅數值欄；缺任一邊則維持 ``NA``）。
+          結果四捨五入至不超過上下兩筆小數位數的較大者。
         - ``"constant"``：以 ``fill_value`` 代替
         - ``"median"``：以該欄原始資料的中位數代替（僅數值欄）
     fill_value :

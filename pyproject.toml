@@ -33,6 +33,15 @@ keywords = [
     "green-building",
 ]
 
+[project.optional-dependencies]
+mcp = [
+    "mcp>=1.6.0,<2",  # FastMCP；2.x 已更名為 MCPServer
+    "pydantic>=2.0.0",
+]
+
+[project.scripts]
+pygreenbuild-mcp = "pygreenbuild.mcp.server:main"
+
 [dependency-groups]
 dev = [
     "pytest>=8.0.0",

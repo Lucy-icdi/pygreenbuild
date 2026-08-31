@@ -41,7 +41,7 @@ from pygreenbuild.transform import fill_time_gaps
 | `"na"`            | 缺失維持 `NA`（預設）                            |
 | `"ffill"`         | 以前一筆代替                                   |
 | `"bfill"`         | 以後一筆代替                                   |
-| `"neighbor_mean"` | 前後筆平均值（僅數值欄；缺前或後任一筆則維持 `NA`；非數值欄維持 `NA`） |
+| `"neighbor_mean"` | 前後筆平均（僅數值欄；缺前或後任一筆則維持 `NA`；非數值欄維持 `NA`）。小數位對齊兩側較長者，與 `fill_dataframe_na` 相同。 |
 | `"constant"`      | 以 `fill_value` 代替                        |
 | `"median"`        | 以該欄**原始資料**的中位數代替（僅數值欄；非數值欄維持 `NA`）      |
 
@@ -125,5 +125,6 @@ out5 = fill_time_gaps(df5, "ts", "5min")
 - 回傳 `df` 的複本結果，不原地修改。
 - 若原始資料含有不落在 `freq` 網格上的時間點，仍會保留，並與完整時間軸取聯集。
 - `"neighbor_mean"` 與 `"median"` 只對數值欄生效；字串等非數值欄在這兩種策略下維持 `NA`。
+- `"neighbor_mean"` 會四捨五入至不超過前後兩筆小數位數的較大者（與孤立 NA 填補相同）。
 - `"ffill"`／`"bfill"`／`"constant"` 會套用到所有非日期時間欄（含字串欄）。
 
