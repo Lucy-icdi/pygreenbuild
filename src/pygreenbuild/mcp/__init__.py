@@ -1,4 +1,4 @@
-"""MCP 傳輸層：FastMCP Server。"""
+"""MCP Server（FastMCP + stdio）。"""
 
 from pygreenbuild.mcp.server import mcp, main
 

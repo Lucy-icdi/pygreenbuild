@@ -8,13 +8,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pygreenbuild.ingestion.weather_crawler.codis_crawler_tojson import (
+from pygreenbuild.ingestion.weather_crawler.codis_stn_obs_crawler import (
     codis_daily,
     codis_monthly,
     codis_yearly,
 )
 
-MODULE = "pygreenbuild.ingestion.weather_crawler.codis_crawler_tojson"
+MODULE = "pygreenbuild.ingestion.weather_crawler.codis_stn_obs_crawler"
 SAMPLE_DTS = [{"DataTime": "2024-01-01T00:00:00", "AirTemperature": 20.0}]
 
 

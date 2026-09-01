@@ -88,4 +88,4 @@ src/pygreenbuild/
    └─ chiller_performance.py
 ```
 
-> 後續還規劃 `features`、`models`、`api`、`config`、`utils`、`scripts/`、`data/` 等。完整目標目錄樹、狀態標記與落地順序見 [專案資料夾規劃](folder-structure.md)。
+> 後續還規劃 `features`、`models`、`config`、`utils`、`scripts/`、`data/` 等。完整目標目錄樹、狀態標記與落地順序見 [專案資料夾規劃](folder-structure.md)。

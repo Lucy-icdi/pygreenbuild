@@ -6,7 +6,7 @@
 未指定縣市時批次下載全部 22 個縣市；也可用縣市名稱（例：`"臺北市"`）或
 資料編號（例：`"F-D0047-083"`）指定只下載該縣市。
 
-回傳與寫檔慣例與 `codis_crawler_tojson` 一致：
+回傳與寫檔慣例與 `codis_stn_obs_crawler` 一致：
 - `return_data=False` → `(success, message)`
 - `return_data=True` → `(success, data, message)`
 """

@@ -81,10 +81,34 @@ def dataframes_dict_to_records(results: dict[str, pd.DataFrame]) -> dict[str, An
 
 
 def wrap_success(result: Any, *, message: str = "ok") -> dict[str, Any]:
-    """包裝成功回傳值為統一 dict 格式。"""
+    """包裝成功回傳值為統一 dict 格式。
+
+    Parameters
+    ----------
+    result :
+        成功時的內容（單位：不適用）。
+    message :
+        說明文字（單位：不適用）。
+
+    Returns
+    -------
+    dict[str, Any]
+        含 ``success``、``message``、``result``（單位：不適用）。
+    """
     return {"success": True, "message": message, "result": result}
 
 
 def wrap_failure(message: str) -> dict[str, Any]:
-    """包裝失敗回傳為統一 dict 格式。"""
+    """包裝失敗回傳為統一 dict 格式。
+
+    Parameters
+    ----------
+    message :
+        失敗原因（單位：不適用）。
+
+    Returns
+    -------
+    dict[str, Any]
+        ``success`` 為 False，``result`` 為 None（單位：不適用）。
+    """
     return {"success": False, "message": message, "result": None}

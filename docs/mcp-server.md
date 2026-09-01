@@ -5,13 +5,10 @@
 ## 架構
 
 ```
-src/pygreenbuild/
-├─ api/                    # 共用服務層（MCP + 未來 REST 共用）
-│   ├─ serialization.py    # DataFrame ↔ JSON records
-│   └─ services/           # 薄封裝：呼叫核心函式
-├─ mcp/                    # MCP 傳輸層
-│   ├─ server.py           # ★ 統一 MCP 窗口（FastMCP + stdio）
-│   └─ tools/              # 依領域註冊 @mcp.tool()
+src/pygreenbuild/mcp/
+├─ server.py           # ★ 統一 MCP 窗口（FastMCP + stdio）
+├─ serialization.py    # DataFrame ↔ JSON records、統一回傳 dict
+└─ tools/              # 依領域註冊 @mcp.tool()，直接呼叫核心函式
 ```
 
 統一入口為 [`src/pygreenbuild/mcp/server.py`](../src/pygreenbuild/mcp/server.py)，所有 tools 透過單一 `FastMCP("pygreenbuild")` 實例註冊。
@@ -211,6 +208,9 @@ python scripts/run_mcp_server.py
 | `codis_daily` | `codis_daily` | CODIS 日報 JSON |
 | `codis_monthly` | `codis_monthly` | CODIS 月報 JSON |
 | `codis_yearly` | `codis_yearly` | CODIS 年報 JSON |
+| `codis_single_hourly_monthly` | `codis_single_hourly_monthly` | CODIS 單項逐時月報表 JSON |
+| `codis_single_daily_yearly` | `codis_single_daily_yearly` | CODIS 單項逐日年報表 JSON |
+| `codis_single_monthly_yearly` | `codis_single_monthly_yearly` | CODIS 單項逐月年報表 JSON |
 | `cwa_township_forecast_3day` | `cwa_township_forecast_3day` | CWA 鄉鎮 3 天預報 |
 | `cwa_township_forecast_week` | `cwa_township_forecast_week` | CWA 鄉鎮 1 週預報 |
 
@@ -258,7 +258,7 @@ python scripts/run_mcp_server.py
 
 ## 回傳格式
 
-所有 tools 回傳統一 dict：
+序列化由 [`src/pygreenbuild/mcp/serialization.py`](../src/pygreenbuild/mcp/serialization.py) 處理。所有 tools 回傳統一 dict：
 
 ```python
 {"success": True, "message": "ok", "result": ...}
@@ -277,19 +277,19 @@ DataFrame 結果序列化為 JSON records：
 
 ## Python 使用範例（不透過 MCP）
 
-```python
-from pygreenbuild.api.services.transform import pmv_iso_service
-from pygreenbuild.api.services.metrics import chiller_cop_service
+不經 MCP 時請直接呼叫核心函式，不必經過 tools：
 
-# PMV 計算
-comfort = pmv_iso_service(
+```python
+from pygreenbuild.transform import pmv_iso
+from pygreenbuild import ChillerKPI
+
+comfort = pmv_iso(
     tdb=25.0, tr=25.0, vr=0.1, rh=50.0, met=1.2, clo=0.5
 )
-print(comfort["result"]["pmv"])
+print(comfort["pmv"])
 
-# COP 計算
-cop = chiller_cop_service(cooling_kw=1000.0, power_kw=200.0)
-print(cop["result"])  # 5.0
+cop = ChillerKPI.calculate_cop(cooling_kw=1000.0, power_kw=200.0)
+print(cop)  # 5.0
 ```
 
 ## 例外

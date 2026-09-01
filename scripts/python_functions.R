@@ -7,13 +7,22 @@ library(reticulate)
 }
 
 # 下載 CODIS 年資料
-codis_yearly <- import("pygreenbuild.ingestion.weather_crawler.codis_crawler_tojson")$codis_yearly
+codis_yearly <- import("pygreenbuild.ingestion.weather_crawler.codis_stn_obs_crawler")$codis_yearly
 
 # 下載 CODIS 月資料
-codis_monthly <- import("pygreenbuild.ingestion.weather_crawler.codis_crawler_tojson")$codis_monthly
+codis_monthly <- import("pygreenbuild.ingestion.weather_crawler.codis_stn_obs_crawler")$codis_monthly
 
 # 下載 CODIS 日資料
-codis_daily <- import("pygreenbuild.ingestion.weather_crawler.codis_crawler_tojson")$codis_daily
+codis_daily <- import("pygreenbuild.ingestion.weather_crawler.codis_stn_obs_crawler")$codis_daily
+
+# 下載 CODIS 單項逐時月報表
+codis_single_hourly_monthly <- import("pygreenbuild.ingestion.weather_crawler.codis_single_item_crawler")$codis_single_hourly_monthly
+
+# 下載 CODIS 單項逐日年報表
+codis_single_daily_yearly <- import("pygreenbuild.ingestion.weather_crawler.codis_single_item_crawler")$codis_single_daily_yearly
+
+# 下載 CODIS 單項逐月年報表
+codis_single_monthly_yearly <- import("pygreenbuild.ingestion.weather_crawler.codis_single_item_crawler")$codis_single_monthly_yearly
 
 # 下載鄉鎮天氣預報－未來 3 天（未指定縣市則批次下載 22 個縣市）
 cwa_township_forecast_3day <- import("pygreenbuild.ingestion.weather_crawler.cwa_township_forecast")$cwa_township_forecast_3day

@@ -20,7 +20,8 @@ src/pygreenbuild/
 ├─ ingestion/                         # 資料來源層（Extract）
 │   ├─ weather_crawler/               # （既有／升級）氣象擷取
 │   │   ├─ codis_cookie_manager.py
-│   │   ├─ codis_crawler_tojson.py
+│   │   ├─ codis_stn_obs_crawler.py
+│   │   ├─ codis_single_item_crawler.py
 │   │   ├─ cwa_stations_crawler.py
 │   │   ├─ cwa_township_forecast.py
 │   │   ├─ greenbim_api_export.py
@@ -62,16 +63,10 @@ src/pygreenbuild/
 │   ├─ chiller_performance.py
 │   └─ __init__.py
 │
-├─ api/                               # （既有）服務介面（MCP + 未來 REST 共用）
-│   ├─ serialization.py               # （既有）
-│   ├─ services/                      # （既有）
-│   ├─ main.py                        # （規劃）FastAPI REST 入口
-│   ├─ schemas.py                     # （規劃）
-│   └─ __init__.py
-│
 ├─ mcp/                               # （既有）MCP Server
 │   ├─ server.py                      # 統一 MCP 窗口
-│   ├─ tools/
+│   ├─ serialization.py               # DataFrame ↔ JSON records
+│   ├─ tools/                         # @mcp.tool()，直接呼叫核心函式
 │   └─ __init__.py
 │
 ├─ features/                          # （規劃）特徵工程／ML 前處理
@@ -106,8 +101,7 @@ scripts/                              # 可執行入口腳本
 ├─ run_email_ingestion.py
 ├─ run_pipeline.py                    # parser + transform + load
 ├─ run_feature.py
-├─ run_training.py
-└─ run_api.py
+└─ run_training.py
 
 data/                                 # （規劃）本機資料工作區（通常不納入版本庫）
 ├─ sample/
@@ -149,13 +143,13 @@ data/                                 # （規劃）本機資料工作區（通�
 
 ML 相關：資料合併、特徵工程，以及訓練／推論。在標準資料與成效計算穩定後擴充。
 
-### `src/pygreenbuild/api/`、`config/`、`utils/`
+### `src/pygreenbuild/mcp/`、`config/`、`utils/`
 
-對外 API、集中設定與共用工具（日誌、時間處理等）。
+MCP Server（Agent 整合）、集中設定與共用工具（日誌、時間處理等）。
 
 ### `scripts/`
 
-對外執行入口，串接 ingestion、pipeline、feature、training、API，避免在套件內寫死 CLI 流程。
+對外執行入口，串接 ingestion、pipeline、feature、training，避免在套件內寫死 CLI 流程。
 
 ### `data/`
 
@@ -169,7 +163,6 @@ ML 相關：資料合併、特徵工程，以及訓練／推論。在標準資�
 2. **統一設定與工具**：`config/`、`utils/`
 3. **管線腳本**：`scripts/run_pipeline.py` 等入口
 4. **特徵與模型**：`features/` → `models/`
-5. **服務介面**：`api/`
 
 ---
 

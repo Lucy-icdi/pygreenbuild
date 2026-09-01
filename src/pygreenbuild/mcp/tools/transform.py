@@ -2,20 +2,32 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from mcp.server.fastmcp import FastMCP
 
-from pygreenbuild.api.services.transform import (
-    fill_dataframe_na_service,
-    fill_time_gaps_service,
-    json_to_dataframe_service,
-    pmv_ashrae_service,
-    pmv_iso_service,
-    to_date_column_service,
-    to_datetime_column_service,
-    to_time_column_service,
+from pygreenbuild.mcp.serialization import (
+    dataframe_to_records,
+    records_to_dataframe,
+    wrap_success,
 )
+from pygreenbuild.transform.fill_dataframe_na import (
+    fill_dataframe_na as _fill_dataframe_na,
+)
+from pygreenbuild.transform.fill_time_gaps import fill_time_gaps as _fill_time_gaps
+from pygreenbuild.transform.json_to_dataframe import (
+    json_to_dataframe as _json_to_dataframe,
+)
+from pygreenbuild.transform.pmv import pmv_ashrae as _pmv_ashrae, pmv_iso as _pmv_iso
+from pygreenbuild.transform.transform_time import (
+    to_date_column as _to_date_column,
+    to_datetime_column as _to_datetime_column,
+    to_time_column as _to_time_column,
+)
+
+FillMethod = Literal[
+    "na", "ffill", "bfill", "neighbor_mean", "constant", "median"
+]
 
 
 def register_transform_tools(mcp: FastMCP) -> None:
@@ -24,7 +36,8 @@ def register_transform_tools(mcp: FastMCP) -> None:
     @mcp.tool()
     def json_to_dataframe(data: list[dict[str, Any]]) -> dict[str, Any]:
         """將 CODIS 觀測 JSON 轉為中文欄位 DataFrame（JSON records 格式）。"""
-        return json_to_dataframe_service(data)
+        df = _json_to_dataframe(data)
+        return wrap_success(dataframe_to_records(df))
 
     @mcp.tool()
     def to_date_column(
@@ -34,9 +47,13 @@ def register_transform_tools(mcp: FastMCP) -> None:
         as_string: bool = False,
     ) -> dict[str, Any]:
         """將指定欄位轉為純日期。"""
-        return to_date_column_service(
-            data, column, result_col=result_col, as_string=as_string
+        df = _to_date_column(
+            records_to_dataframe(data),
+            column,
+            result_col=result_col,
+            as_string=as_string,
         )
+        return wrap_success(dataframe_to_records(df))
 
     @mcp.tool()
     def to_time_column(
@@ -46,9 +63,13 @@ def register_transform_tools(mcp: FastMCP) -> None:
         as_string: bool = False,
     ) -> dict[str, Any]:
         """將指定欄位轉為純時間（23:59 特殊處理）。"""
-        return to_time_column_service(
-            data, column, result_col=result_col, as_string=as_string
+        df = _to_time_column(
+            records_to_dataframe(data),
+            column,
+            result_col=result_col,
+            as_string=as_string,
         )
+        return wrap_success(dataframe_to_records(df))
 
     @mcp.tool()
     def to_datetime_column(
@@ -58,16 +79,20 @@ def register_transform_tools(mcp: FastMCP) -> None:
         as_string: bool = False,
     ) -> dict[str, Any]:
         """將指定欄位轉為日期時間。"""
-        return to_datetime_column_service(
-            data, column, result_col=result_col, as_string=as_string
+        df = _to_datetime_column(
+            records_to_dataframe(data),
+            column,
+            result_col=result_col,
+            as_string=as_string,
         )
+        return wrap_success(dataframe_to_records(df))
 
     @mcp.tool()
     def fill_time_gaps(
         data: list[dict[str, Any]],
         datetime_col: str,
         freq: str,
-        fill_method: str = "na",
+        fill_method: FillMethod = "na",
         fill_value: object | None = None,
     ) -> dict[str, Any]:
         """依頻率補齊缺失時間列。
@@ -77,13 +102,14 @@ def register_transform_tools(mcp: FastMCP) -> None:
             freq: pandas 頻率字串，例如 "h"、"3min"。
             fill_method: na/ffill/bfill/neighbor_mean/constant/median。
         """
-        return fill_time_gaps_service(
-            data,
+        df = _fill_time_gaps(
+            records_to_dataframe(data),
             datetime_col,
             freq,
-            fill_method=fill_method,  # type: ignore[arg-type]
+            fill_method=fill_method,
             fill_value=fill_value,
         )
+        return wrap_success(dataframe_to_records(df))
 
     @mcp.tool()
     def fill_dataframe_na(
@@ -92,21 +118,22 @@ def register_transform_tools(mcp: FastMCP) -> None:
         range_start: Any = None,
         range_end: Any = None,
         exclude_cols: list[str] | None = None,
-        fill_method: str = "neighbor_mean",
+        fill_method: FillMethod = "neighbor_mean",
         fill_value: object | None = None,
         columns: list[str] | None = None,
     ) -> dict[str, Any]:
         """填補 DataFrame 中上下皆有值的孤立 NA。"""
-        return fill_dataframe_na_service(
-            data,
+        df = _fill_dataframe_na(
+            records_to_dataframe(data),
             range_col=range_col,
             range_start=range_start,
             range_end=range_end,
             exclude_cols=exclude_cols,
-            fill_method=fill_method,  # type: ignore[arg-type]
+            fill_method=fill_method,
             fill_value=fill_value,
             columns=columns,
         )
+        return wrap_success(dataframe_to_records(df))
 
     @mcp.tool()
     def pmv_iso(
@@ -121,11 +148,18 @@ def register_transform_tools(mcp: FastMCP) -> None:
         output: str = "all",
     ) -> dict[str, Any]:
         """計算 ISO 7730 PMV/PPD 熱舒適度。"""
-        return pmv_iso_service(
-            tdb, tr, vr, rh, met, clo, wme,
+        result = _pmv_iso(
+            tdb,
+            tr,
+            vr,
+            rh,
+            met,
+            clo,
+            wme,
             round_output=round_output,
-            output=output,
+            output=output,  # type: ignore[arg-type]
         )
+        return wrap_success(result)
 
     @mcp.tool()
     def pmv_ashrae(
@@ -140,8 +174,15 @@ def register_transform_tools(mcp: FastMCP) -> None:
         output: str = "all",
     ) -> dict[str, Any]:
         """計算 ASHRAE 55 PMV/PPD 熱舒適度（含 Cooling Effect）。"""
-        return pmv_ashrae_service(
-            tdb, tr, vr, rh, met, clo, wme,
+        result = _pmv_ashrae(
+            tdb,
+            tr,
+            vr,
+            rh,
+            met,
+            clo,
+            wme,
             round_output=round_output,
-            output=output,
+            output=output,  # type: ignore[arg-type]
         )
+        return wrap_success(result)

@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from pygreenbuild.api.services.database import fill_sql_table_na_service
+from pygreenbuild.ingestion.ems_db.factory_db import (
+    fill_sql_table_na as _fill_sql_table_na,
+)
+from pygreenbuild.mcp.serialization import wrap_failure, wrap_success
 
 
 def register_database_tools(mcp: FastMCP) -> None:
@@ -28,14 +32,24 @@ def register_database_tools(mcp: FastMCP) -> None:
 
         連線字串從 PYGREENBUILD_DB_URL 環境變數讀取。
         """
-        return fill_sql_table_na_service(
-            table_name,
-            range_col=range_col,
-            range_start=range_start,
-            range_end=range_end,
-            exclude_cols=exclude_cols,
-            key_cols=key_cols,
-            fill_method=fill_method,
-            fill_value=fill_value,
-            columns=columns,
-        )
+        connection_str = os.environ.get("PYGREENBUILD_DB_URL")
+        if not connection_str:
+            return wrap_failure("請設定 PYGREENBUILD_DB_URL 環境變數")
+
+        try:
+            result = _fill_sql_table_na(
+                connection_str,
+                table_name,
+                range_col,
+                range_start,
+                range_end,
+                exclude_cols=exclude_cols,
+                key_cols=key_cols,
+                fill_method=fill_method,  # type: ignore[arg-type]
+                fill_value=fill_value,
+                columns=columns,
+            )
+        except Exception as exc:
+            return wrap_failure(str(exc))
+
+        return wrap_success(result)
