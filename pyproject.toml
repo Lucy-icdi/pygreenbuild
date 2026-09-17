@@ -12,7 +12,7 @@ authors = [
     { name = "Lucy Lee", email = "lucy@icdi.asia" },
     { name = "ICDI Team", email = "greenbim@icdi.asia" }
 ]
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.12,<3.15"
 dependencies = [
     "requests>=2.31.0",
     "pandas>=2.1.4",

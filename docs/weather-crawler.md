@@ -519,6 +519,134 @@ ok, data, msg = codis_single_monthly_yearly(
 
 ---
 
+## CODIS Cookie 管理
+
+模組：`pygreenbuild.ingestion.weather_crawler.codis_cookie_manager`
+
+CODIS API 需帶 Session Cookie。年／月／日報與單項爬蟲會呼叫 `get_valid_cookie()`，一般不必直接使用本模組。
+
+Python 3.13 起預設啟用 `ssl.VERIFY_X509_STRICT`。中央氣象署網站憑證鏈接到 TWCA，可能因缺少 Subject Key Identifier 而握手失敗。本模組會關閉該旗標，仍驗證憑證簽章、主機名稱與有效期限，因此 3.12、3.13、3.14 均可連線。
+
+---
+
+### `get_codis_cookie`
+
+#### 用途
+
+造訪 CODIS 測站頁面，從回應 Cookie 組出 HTTP `Cookie` 標頭字串。
+
+#### 輸入參數
+
+無。單位：不適用。
+
+#### 回傳值
+
+| 型別 | 單位 | 意義 |
+|------|------|------|
+| `str \| None` | 不適用 | Cookie 標頭字串（例：`PHPSESSID=...`）。網路錯誤、SSL 錯誤或未取得任何 Cookie 時為 `None` |
+
+#### 使用範例
+
+```python
+from pygreenbuild.ingestion.weather_crawler.codis_cookie_manager import get_codis_cookie
+
+cookie = get_codis_cookie()
+if cookie is not None:
+    print(cookie)
+```
+
+#### 可能例外與發生條件
+
+不拋例外。`requests` 連線失敗或未預期錯誤時印出訊息並回傳 `None`。
+
+#### 使用限制與注意事項
+
+- 需能連上 `https://codis.cwa.gov.tw`。
+- 僅組出 Cookie 字串，不驗證能否呼叫 API；請用 `validate_cookie` 或 `get_valid_cookie`。
+
+---
+
+### `validate_cookie`
+
+#### 用途
+
+對 CODIS station API 發送測試 POST，確認 Cookie 是否仍有效。
+
+#### 輸入參數
+
+| 參數 | 型別 | 單位 | 意義 |
+|------|------|------|------|
+| `cookie` | `str` | 不適用 | 要驗證的 Cookie 標頭字串 |
+
+#### 回傳值
+
+| 型別 | 單位 | 意義 |
+|------|------|------|
+| `bool` | 不適用 | HTTP 狀態碼為 200 時為 `True`，否則為 `False` |
+
+#### 使用範例
+
+```python
+from pygreenbuild.ingestion.weather_crawler.codis_cookie_manager import (
+    get_codis_cookie,
+    validate_cookie,
+)
+
+cookie = get_codis_cookie()
+if cookie is not None and validate_cookie(cookie):
+    print("Cookie 有效")
+```
+
+#### 可能例外與發生條件
+
+不拋例外。逾時、連線失敗或其他錯誤時回傳 `False`。
+
+#### 使用限制與注意事項
+
+- 會對 `https://codis.cwa.gov.tw/api/station` 發出真實請求。
+- 狀態碼 200 只代表伺服器接受該 Cookie，不保證後續下載一定有資料。
+
+---
+
+### `get_valid_cookie`
+
+#### 用途
+
+取得通過驗證的 Cookie。模組內快取 6 小時，過期或驗證失敗才重新向網站索取。
+
+#### 輸入參數
+
+無。單位：不適用。
+
+#### 回傳值
+
+| 型別 | 單位 | 意義 |
+|------|------|------|
+| `str` | 不適用 | 通過驗證的 Cookie 標頭字串 |
+
+#### 使用範例
+
+```python
+from pygreenbuild.ingestion.weather_crawler.codis_cookie_manager import get_valid_cookie
+
+cookie = get_valid_cookie()
+headers = {"Cookie": cookie}
+```
+
+#### 可能例外與發生條件
+
+| 例外 | 發生條件 |
+|------|----------|
+| `Exception` | 連續 3 次取得或驗證失敗 |
+
+#### 使用限制與注意事項
+
+- 快取有效期限為 6 小時（`COOKIE_VALIDITY = 21600` 秒）。
+- 快取為行程內全域變數，多執行緒同時呼叫可能重複請求。
+- 年／月／日報與單項爬蟲已內建呼叫，R 端請使用既有 `codis_yearly` 等包裝函式，不必直接匯入本模組。
+
+---
+
 ## 鄉鎮天氣預報（CWA OpenData）
 
 鄉鎮預報（`cwa_township_forecast_3day`／`cwa_township_forecast_week`）另篇說明，詳見 [鄉鎮天氣預報爬蟲](cwa-township-forecast.md)。兩者定位差異：
