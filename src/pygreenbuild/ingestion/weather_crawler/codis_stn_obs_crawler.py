@@ -81,9 +81,34 @@ def _fetch_data(payload: Dict) -> Tuple[bool, Optional[CodisData], str]:
         return False, None, f"發生網路錯誤: {req_err}"
 
 
+def _resolve_output_path(output: str, default_filename: str) -> str:
+    """將 ``output`` 解析為最終寫入路徑。
+
+    - 若為完整檔名路徑（有副檔名，例如 ``.json``），沿用使用者自訂檔名。
+    - 若為資料夾路徑（無副檔名、已存在的目錄，或以路徑分隔符結尾），
+      則在該目錄下使用 ``default_filename``。
+
+    Args:
+        output: 使用者指定的輸出路徑（檔案或目錄）。
+        default_filename: 僅提供目錄時使用的預設檔名。
+
+    Returns:
+        最終要寫入的檔案路徑字串。
+    """
+    path = output.strip()
+    if path.endswith(("/", "\\")) or os.path.isdir(path):
+        return os.path.join(path, default_filename)
+    _, ext = os.path.splitext(path)
+    if ext:
+        return path
+    return os.path.join(path, default_filename)
+
+
 def _save_json(data: CodisData, output_path: str) -> None:
-    output_dir = os.path.dirname(output_path)
-    os.makedirs(output_dir, exist_ok=True)
+    """將資料寫成 UTF-8 JSON 檔；必要時建立父目錄。"""
+    parent = os.path.dirname(output_path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
@@ -134,7 +159,7 @@ def _parse_year_month(setYM: str) -> tuple[int, int]:
 @overload
 def codis_yearly(
     station_id,
-    output_dir: Optional[str],
+    output: Optional[str],
     year,
     *,
     return_data: bool = False,
@@ -144,7 +169,7 @@ def codis_yearly(
 @overload
 def codis_yearly(
     station_id,
-    output_dir: Optional[str],
+    output: Optional[str],
     year,
     *,
     return_data: bool = True,
@@ -153,7 +178,7 @@ def codis_yearly(
 
 def codis_yearly(
     station_id,
-    output_dir: Optional[str],
+    output: Optional[str],
     year,
     *,
     return_data: bool = False,
@@ -162,12 +187,13 @@ def codis_yearly(
 
     Args:
         station_id: 測站代碼。
-        output_dir: JSON 輸出目錄；`return_data=False` 時必填。
+        output: JSON 輸出路徑。可為資料夾或完整檔名（例：``cwa_466920.json``）；
+            ``return_data=False`` 時必填。
         year: 年份。
         return_data: 為 True 時回傳資料供後續處理；為 False 時僅匯出 JSON。
     """
-    if not return_data and not output_dir:
-        return False, "匯出 JSON 模式需提供 output_dir"
+    if not return_data and not output:
+        return False, "匯出 JSON 模式需提供 output"
 
     year_str = str(year)
     station_id_str = str(station_id)
@@ -187,9 +213,10 @@ def codis_yearly(
     }
 
     output_path = None
-    if output_dir:
-        output_filename = f"{year_str}_{station_id_str}.json"
-        output_path = os.path.join(output_dir, output_filename)
+    if output:
+        output_path = _resolve_output_path(
+            output, f"{year_str}_{station_id_str}.json"
+        )
 
     success, data, message = _fetch_data(payload)
     return _finalize_result(
@@ -200,7 +227,7 @@ def codis_yearly(
 @overload
 def codis_monthly(
     station_id: str,
-    output_dir: Optional[str],
+    output: Optional[str],
     setYM: str,
     *,
     return_data: bool = False,
@@ -210,7 +237,7 @@ def codis_monthly(
 @overload
 def codis_monthly(
     station_id: str,
-    output_dir: Optional[str],
+    output: Optional[str],
     setYM: str,
     *,
     return_data: bool = True,
@@ -219,7 +246,7 @@ def codis_monthly(
 
 def codis_monthly(
     station_id: str,
-    output_dir: Optional[str],
+    output: Optional[str],
     setYM: str,
     *,
     return_data: bool = False,
@@ -228,12 +255,12 @@ def codis_monthly(
 
     Args:
         station_id: 測站代碼。
-        output_dir: JSON 輸出目錄；`return_data=False` 時必填。
+        output: JSON 輸出路徑。可為資料夾或完整檔名；``return_data=False`` 時必填。
         setYM: 年月，支援 YYYYMM、YYYY-MM 或 YYYY-MM-DD。
         return_data: 為 True 時回傳資料供後續處理；為 False 時僅匯出 JSON。
     """
-    if not return_data and not output_dir:
-        return False, "匯出 JSON 模式需提供 output_dir"
+    if not return_data and not output:
+        return False, "匯出 JSON 模式需提供 output"
 
     try:
         year, month = _parse_year_month(setYM)
@@ -260,9 +287,10 @@ def codis_monthly(
     }
 
     output_path = None
-    if output_dir:
-        output_filename = f"{year:04d}{month:02d}_{station_id}.json"
-        output_path = os.path.join(output_dir, output_filename)
+    if output:
+        output_path = _resolve_output_path(
+            output, f"{year:04d}{month:02d}_{station_id}.json"
+        )
 
     success, data, message = _fetch_data(payload)
     return _finalize_result(
@@ -273,7 +301,7 @@ def codis_monthly(
 @overload
 def codis_daily(
     station_id: str,
-    output_dir: Optional[str],
+    output: Optional[str],
     *dates: str,
     return_data: bool = False,
 ) -> Tuple[bool, str]: ...
@@ -282,7 +310,7 @@ def codis_daily(
 @overload
 def codis_daily(
     station_id: str,
-    output_dir: Optional[str],
+    output: Optional[str],
     *dates: str,
     return_data: bool = True,
 ) -> Tuple[bool, Optional[CodisData], str]: ...
@@ -290,7 +318,7 @@ def codis_daily(
 
 def codis_daily(
     station_id: str,
-    output_dir: Optional[str],
+    output: Optional[str],
     *dates: str,
     return_data: bool = False,
 ) -> Union[Tuple[bool, str], Tuple[bool, Optional[CodisData], str]]:
@@ -300,12 +328,12 @@ def codis_daily(
 
     Args:
         station_id: 測站代碼。
-        output_dir: JSON 輸出目錄；`return_data=False` 時必填。
+        output: JSON 輸出路徑。可為資料夾或完整檔名；``return_data=False`` 時必填。
         *dates: 一個或多個日期 (YYYY-MM-DD)。
         return_data: 為 True 時回傳資料供後續處理；為 False 時僅匯出 JSON。
     """
-    if not return_data and not output_dir:
-        return False, "匯出 JSON 模式需提供 output_dir"
+    if not return_data and not output:
+        return False, "匯出 JSON 模式需提供 output"
 
     if not dates:
         message = "請至少提供一個日期參數 (YYYY-MM-DD)"
@@ -339,11 +367,11 @@ def codis_daily(
     if start_str == end_str:
         start_date = f"{start_str}T00:00:00"
         end_date = f"{start_str}T23:59:59"
-        output_filename = f"{start_str}_{station_id}.json"
+        default_filename = f"{start_str}_{station_id}.json"
     else:
         start_date = f"{start_str}T00:00:00"
         end_date = f"{end_str}T23:59:59"
-        output_filename = f"{start_str}~{end_str}_{station_id}.json"
+        default_filename = f"{start_str}~{end_str}_{station_id}.json"
 
     payload = {
         'date': f"{start_str}.000+08:00",
@@ -357,8 +385,8 @@ def codis_daily(
     }
 
     output_path = None
-    if output_dir:
-        output_path = os.path.join(output_dir, output_filename)
+    if output:
+        output_path = _resolve_output_path(output, default_filename)
 
     success, data, message = _fetch_data(payload)
     return _finalize_result(

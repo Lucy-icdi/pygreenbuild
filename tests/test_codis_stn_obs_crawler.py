@@ -24,10 +24,10 @@ SAMPLE_DTS = [{"DataTime": "2024-01-01T00:00:00", "AirTemperature": 20.0}]
 
 
 class TestCodisYearly:
-    def test_requires_output_dir_when_not_returning_data(self) -> None:
+    def test_requires_output_when_not_returning_data(self) -> None:
         success, message = codis_yearly("466920", None, 2024, return_data=False)
         assert success is False
-        assert "output_dir" in message
+        assert "output" in message
 
     @patch(f"{MODULE}._fetch_data")
     def test_return_data_without_saving(self, mock_fetch: MagicMock, tmp_path: Path) -> None:
@@ -66,6 +66,39 @@ class TestCodisYearly:
         assert json.loads(out.read_text(encoding="utf-8")) == SAMPLE_DTS
 
     @patch(f"{MODULE}._fetch_data")
+    def test_saves_json_with_custom_filename(
+        self, mock_fetch: MagicMock, tmp_path: Path
+    ) -> None:
+        mock_fetch.return_value = (True, SAMPLE_DTS, "下載成功")
+        custom = tmp_path / "cwa_466920.json"
+
+        success, message = codis_yearly(
+            "466920", str(custom), 2024, return_data=False
+        )
+
+        assert success is True
+        assert message == "下載成功"
+        assert custom.exists()
+        assert not (tmp_path / "2024_466920.json").exists()
+        assert json.loads(custom.read_text(encoding="utf-8")) == SAMPLE_DTS
+
+    @patch(f"{MODULE}._fetch_data")
+    def test_saves_json_with_bare_custom_filename(
+        self, mock_fetch: MagicMock, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        mock_fetch.return_value = (True, SAMPLE_DTS, "下載成功")
+        monkeypatch.chdir(tmp_path)
+
+        success, message = codis_yearly(
+            "466920", "cwa_466920.json", 2024, return_data=False
+        )
+
+        assert success is True
+        out = tmp_path / "cwa_466920.json"
+        assert out.exists()
+        assert json.loads(out.read_text(encoding="utf-8")) == SAMPLE_DTS
+
+    @patch(f"{MODULE}._fetch_data")
     def test_auto_station_type(self, mock_fetch: MagicMock) -> None:
         mock_fetch.return_value = (True, SAMPLE_DTS, "下載成功")
 
@@ -80,10 +113,10 @@ class TestCodisYearly:
 
 
 class TestCodisMonthly:
-    def test_requires_output_dir_when_not_returning_data(self) -> None:
+    def test_requires_output_when_not_returning_data(self) -> None:
         success, message = codis_monthly("466920", None, "2024-11", return_data=False)
         assert success is False
-        assert "output_dir" in message
+        assert "output" in message
 
     @pytest.mark.parametrize(
         "set_ym, start, end, filename",
@@ -138,10 +171,10 @@ class TestCodisMonthly:
 
 
 class TestCodisDaily:
-    def test_requires_output_dir_when_not_returning_data(self) -> None:
+    def test_requires_output_when_not_returning_data(self) -> None:
         success, message = codis_daily("466920", None, "2024-11-01", return_data=False)
         assert success is False
-        assert "output_dir" in message
+        assert "output" in message
 
     def test_requires_at_least_one_date(self) -> None:
         success, data, message = codis_daily("466920", None, return_data=True)

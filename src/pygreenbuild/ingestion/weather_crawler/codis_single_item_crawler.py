@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import calendar
 import json
-import os
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -25,6 +24,7 @@ from .codis_stn_obs_crawler import (
     CodisData,
     _get_stn_type,
     _parse_year_month,
+    _resolve_output_path,
     _save_json,
 )
 
@@ -281,17 +281,17 @@ def _item_filename_slug(item_value: str) -> str:
 def _finish_single_item(
     payload: Dict[str, str],
     resolve_message: str,
-    return_data: Optional[str],
-    output_filename: str,
+    output: Optional[str],
+    default_filename: str,
 ) -> Tuple[bool, Optional[CodisData], str]:
     """發送請求；成功時可選寫出 JSON，一律回傳 Python 物件。"""
     success, data, message = _fetch_single_item(payload)
     if success:
         message = f"{message}；{resolve_message}"
 
-    output_dir = return_data.strip() if isinstance(return_data, str) else ""
-    if success and data is not None and output_dir:
-        _save_json(data, os.path.join(output_dir, output_filename))
+    output_path = output.strip() if isinstance(output, str) else ""
+    if success and data is not None and output_path:
+        _save_json(data, _resolve_output_path(output_path, default_filename))
 
     return success, data, message
 
@@ -301,12 +301,12 @@ def codis_single_hourly_monthly(
     setYM: str,
     item: str,
     match_index: Optional[int] = None,
-    return_data: Optional[str] = None,
+    output: Optional[str] = None,
 ) -> Tuple[bool, Optional[CodisData], str]:
     """下載指定測站、年月的單項逐時月報表。
 
     一律回傳 Python 物件 ``(success, data, message)``。
-    ``return_data`` 有填路徑時，另外把 JSON 寫到該目錄；未填則不寫檔。
+    ``output`` 有填路徑時另外寫出 JSON；可為資料夾或完整檔名。未填則不寫檔。
 
     Args:
         station_id: 測站代碼。
@@ -314,7 +314,7 @@ def codis_single_hourly_monthly(
         item: 觀測要素。可為對照表中文 key（正則模糊比對）、英文 value，
             或直接傳入 API 代碼。
         match_index: 多個 key 匹配時選用第幾個（1-based）。預設 ``None`` 表示第 1 個。
-        return_data: JSON 輸出目錄。未填或空字串時不寫檔，只回傳資料。
+        output: JSON 輸出路徑（資料夾或完整檔名）。未填或空字串時不寫檔，只回傳資料。
     """
     resolved_ok, item_value, resolve_message = resolve_item(
         item, match_index, ONE_DATE_ITEMS
@@ -343,10 +343,10 @@ def codis_single_hourly_monthly(
         "end": end_date,
         "item": item_value,
     }
-    output_filename = (
+    default_filename = (
         f"{year:04d}{month:02d}_{station_id}_{_item_filename_slug(item_value)}.json"
     )
-    return _finish_single_item(payload, resolve_message, return_data, output_filename)
+    return _finish_single_item(payload, resolve_message, output, default_filename)
 
 
 def codis_single_daily_yearly(
@@ -354,12 +354,12 @@ def codis_single_daily_yearly(
     year: int | str,
     item: str,
     match_index: Optional[int] = None,
-    return_data: Optional[str] = None,
+    output: Optional[str] = None,
 ) -> Tuple[bool, Optional[CodisData], str]:
     """下載指定測站、年份的單項逐日年報表。
 
     一律回傳 Python 物件 ``(success, data, message)``。
-    ``return_data`` 有填路徑時，另外把 JSON 寫到該目錄；未填則不寫檔。
+    ``output`` 有填路徑時另外寫出 JSON；可為資料夾或完整檔名。未填則不寫檔。
 
     Args:
         station_id: 測站代碼。
@@ -367,7 +367,7 @@ def codis_single_daily_yearly(
         item: 觀測要素。可為對照表中文 key（正則模糊比對）、英文 value，
             或直接傳入 API 代碼。
         match_index: 多個 key 匹配時選用第幾個（1-based）。預設 ``None`` 表示第 1 個。
-        return_data: JSON 輸出目錄。未填或空字串時不寫檔，只回傳資料。
+        output: JSON 輸出路徑（資料夾或完整檔名）。未填或空字串時不寫檔，只回傳資料。
     """
     resolved_ok, item_value, resolve_message = resolve_item(
         item, match_index, ONE_MONTH_ITEMS
@@ -394,10 +394,10 @@ def codis_single_daily_yearly(
         "end": end_date,
         "item": item_value,
     }
-    output_filename = (
+    default_filename = (
         f"{year_int:04d}_{station_id}_{_item_filename_slug(item_value)}.json"
     )
-    return _finish_single_item(payload, resolve_message, return_data, output_filename)
+    return _finish_single_item(payload, resolve_message, output, default_filename)
 
 
 def codis_single_monthly_yearly(
@@ -405,12 +405,12 @@ def codis_single_monthly_yearly(
     year: int | str,
     item: str,
     match_index: Optional[int] = None,
-    return_data: Optional[str] = None,
+    output: Optional[str] = None,
 ) -> Tuple[bool, Optional[CodisData], str]:
     """下載指定測站、年份的單項逐月年報表。
 
     一律回傳 Python 物件 ``(success, data, message)``。
-    ``return_data`` 有填路徑時，另外把 JSON 寫到該目錄；未填則不寫檔。
+    ``output`` 有填路徑時另外寫出 JSON；可為資料夾或完整檔名。未填則不寫檔。
 
     Args:
         station_id: 測站代碼。
@@ -418,7 +418,7 @@ def codis_single_monthly_yearly(
         item: 觀測要素。可為對照表中文 key（正則模糊比對）、英文 value，
             或直接傳入 API 代碼。
         match_index: 多個 key 匹配時選用第幾個（1-based）。預設 ``None`` 表示第 1 個。
-        return_data: JSON 輸出目錄。未填或空字串時不寫檔，只回傳資料。
+        output: JSON 輸出路徑（資料夾或完整檔名）。未填或空字串時不寫檔，只回傳資料。
     """
     resolved_ok, item_value, resolve_message = resolve_item(
         item, match_index, ONE_YEAR_ITEMS
@@ -445,7 +445,7 @@ def codis_single_monthly_yearly(
         "end": end_date,
         "item": item_value,
     }
-    output_filename = (
+    default_filename = (
         f"{year_int:04d}_{station_id}_{_item_filename_slug(item_value)}_monthly.json"
     )
-    return _finish_single_item(payload, resolve_message, return_data, output_filename)
+    return _finish_single_item(payload, resolve_message, output, default_filename)

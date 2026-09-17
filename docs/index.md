@@ -13,7 +13,7 @@
 |------|------|
 | [架構概覽](architecture.md) | ETL 與 metrics 層級定位 |
 | [專案資料夾規劃](folder-structure.md) | 未來目標目錄樹與落地順序 |
-| [天氣爬蟲](weather-crawler.md) | `codis_yearly`／`monthly`／`daily` |
+| [天氣爬蟲](weather-crawler.md) | `codis_yearly`／`monthly`／`daily`、`cwa_stations` |
 | [鄉鎮天氣預報爬蟲](cwa-township-forecast.md) | `cwa_township_forecast_3day`／`week`，逐縣市批次下載 |
 | [JSON 轉 DataFrame](json-to-dataframe.md) | CODIS 觀測 JSON → 中文欄位表 |
 | [時間欄位轉換](transform-time.md) | 純日期／純時間／日期時間 |

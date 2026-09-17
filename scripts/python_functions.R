@@ -24,6 +24,9 @@ codis_single_daily_yearly <- import("pygreenbuild.ingestion.weather_crawler.codi
 # 下載 CODIS 單項逐月年報表
 codis_single_monthly_yearly <- import("pygreenbuild.ingestion.weather_crawler.codis_single_item_crawler")$codis_single_monthly_yearly
 
+# 下載 CWA 測站清單（現有站／撤銷站）CSV
+cwa_stations <- import("pygreenbuild.ingestion.weather_crawler.cwa_stations_crawler")$cwa_stations
+
 # 下載鄉鎮天氣預報－未來 3 天（未指定縣市則批次下載 22 個縣市）
 cwa_township_forecast_3day <- import("pygreenbuild.ingestion.weather_crawler.cwa_township_forecast")$cwa_township_forecast_3day
 

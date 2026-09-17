@@ -224,13 +224,13 @@ class TestCodisSingleHourlyMonthly:
         assert "海平面氣壓(hPa)" in message
 
     @patch(f"{MODULE}._fetch_single_item")
-    def test_saves_json_when_return_data_is_path(
+    def test_saves_json_when_output_is_dir(
         self, mock_fetch: MagicMock, tmp_path: Path
     ) -> None:
         mock_fetch.return_value = (True, SAMPLE_DTS, "下載成功")
 
         success, data, message = codis_single_hourly_monthly(
-            "466900", "2026-03", "SeaLevelPressure", return_data=str(tmp_path)
+            "466900", "2026-03", "SeaLevelPressure", output=str(tmp_path)
         )
 
         assert success is True
@@ -241,13 +241,31 @@ class TestCodisSingleHourlyMonthly:
         assert "下載成功" in message
 
     @patch(f"{MODULE}._fetch_single_item")
-    def test_empty_return_data_does_not_save(
+    def test_saves_json_when_output_is_file(
+        self, mock_fetch: MagicMock, tmp_path: Path
+    ) -> None:
+        mock_fetch.return_value = (True, SAMPLE_DTS, "下載成功")
+        custom = tmp_path / "custom_slp.json"
+
+        success, data, message = codis_single_hourly_monthly(
+            "466900", "2026-03", "SeaLevelPressure", output=str(custom)
+        )
+
+        assert success is True
+        assert data == SAMPLE_DTS
+        assert custom.exists()
+        assert not (tmp_path / "202603_466900_SeaLevelPressure.json").exists()
+        assert json.loads(custom.read_text(encoding="utf-8")) == SAMPLE_DTS
+        assert "下載成功" in message
+
+    @patch(f"{MODULE}._fetch_single_item")
+    def test_empty_output_does_not_save(
         self, mock_fetch: MagicMock, tmp_path: Path
     ) -> None:
         mock_fetch.return_value = (True, SAMPLE_DTS, "下載成功")
 
         success, data, _message = codis_single_hourly_monthly(
-            "466900", "2026-03", "SeaLevelPressure", return_data="  "
+            "466900", "2026-03", "SeaLevelPressure", output="  "
         )
 
         assert success is True
@@ -261,7 +279,7 @@ class TestCodisSingleHourlyMonthly:
         mock_fetch.return_value = (True, SAMPLE_DTS, "下載成功")
 
         success, data, _message = codis_single_hourly_monthly(
-            "466900", "2026-03", "風速", return_data=str(tmp_path)
+            "466900", "2026-03", "風速", output=str(tmp_path)
         )
 
         assert success is True
@@ -386,13 +404,13 @@ class TestCodisSingleDailyYearly:
         assert "海平面氣壓(hPa)" in message
 
     @patch(f"{MODULE}._fetch_single_item")
-    def test_saves_json_when_return_data_is_path(
+    def test_saves_json_when_output_is_dir(
         self, mock_fetch: MagicMock, tmp_path: Path
     ) -> None:
         mock_fetch.return_value = (True, SAMPLE_DTS, "下載成功")
 
         success, data, message = codis_single_daily_yearly(
-            "466930", 2026, "SeaLevelPressure", return_data=str(tmp_path)
+            "466930", 2026, "SeaLevelPressure", output=str(tmp_path)
         )
 
         assert success is True
@@ -518,13 +536,13 @@ class TestCodisSingleMonthlyYearly:
         assert "測站氣壓(hPa)" in message
 
     @patch(f"{MODULE}._fetch_single_item")
-    def test_saves_json_when_return_data_is_path(
+    def test_saves_json_when_output_is_dir(
         self, mock_fetch: MagicMock, tmp_path: Path
     ) -> None:
         mock_fetch.return_value = (True, SAMPLE_DTS, "下載成功")
 
         success, data, message = codis_single_monthly_yearly(
-            "466930", 2026, "StationPressure", return_data=str(tmp_path)
+            "466930", 2026, "StationPressure", output=str(tmp_path)
         )
 
         assert success is True

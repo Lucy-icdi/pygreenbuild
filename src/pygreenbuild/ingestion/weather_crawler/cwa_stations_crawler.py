@@ -1,14 +1,41 @@
+"""自中央氣象署 HDPS 網頁抓取測站清單並匯出 CSV。"""
+
+from __future__ import annotations
+
 import datetime
 import io
 import os
 import re
+from typing import Any, Dict, Optional
 
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
+from .codis_stn_obs_crawler import _resolve_output_path
 
-def cwa_stations(open=True, output_dir=None,columns_to_export=None, new_columns=None):
+
+def cwa_stations(
+    open: bool = True,
+    output: Optional[str] = None,
+    columns_to_export: Optional[Dict[str, str]] = None,
+    new_columns: Optional[Dict[str, Any]] = None,
+) -> None:
+    """自 HDPS 網頁抓取中央氣象署測站清單並匯出 CSV。
+
+    Args:
+        open: ``True`` 抓取現有站；``False`` 抓取撤銷站。
+        output: CSV 輸出路徑。可為資料夾或完整檔名（例：``stn.csv``、
+            ``D:\\data\\stn.csv``）。未填時寫入目前工作目錄，檔名依站別與
+            網頁日期自動產生（例：``現有站_20240101.csv``）。
+        columns_to_export: 要匯出的欄位對照 ``{原始欄位: 新欄位名}``。
+            未填則輸出全部欄位。
+        new_columns: 要新增的固定值欄位 ``{欄位名: 值}``。
+
+    Returns:
+        無。成功時寫出 CSV；失敗時以 ``print`` 提示，不拋出例外
+        （欄位輸出名稱重複時提前結束）。
+    """
     # 1. 設定網址和 Headers
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
@@ -38,12 +65,11 @@ def cwa_stations(open=True, output_dir=None,columns_to_export=None, new_columns=
                 formatted_date = extracted_date_str.replace("/", "")
 
         # --- 判斷表格索引 i 並決定檔名開頭  ---
-        station_prefix = "cwa_station"
         table_index = 0 if open is True else 1
 
-        if open == True:
+        if open is True:
             station_prefix = "現有站"
-        elif open == False:
+        else:
             station_prefix = "撤銷站"
 
         print(
@@ -52,12 +78,14 @@ def cwa_stations(open=True, output_dir=None,columns_to_export=None, new_columns=
 
         # 3. 根據站別、日期建立檔案路徑
         base_filename = f"{station_prefix}_{formatted_date}.csv"
-
-        if output_dir:
-            os.makedirs(output_dir, exist_ok=True)
-            csv_filepath = os.path.join(output_dir, base_filename)
+        if output:
+            csv_filepath = _resolve_output_path(output, base_filename)
         else:
             csv_filepath = base_filename
+
+        parent = os.path.dirname(csv_filepath)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
 
         # --- 讀取表格資料並存檔 ---
         tables = pd.read_html(io.StringIO(html_content))
