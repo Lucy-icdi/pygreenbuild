@@ -7,8 +7,10 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 
 from pygreenbuild.ingestion.weather_crawler.codis_single_item_crawler import (
+    API_URL,
     ONE_DATE_ITEMS,
     ONE_MONTH_ITEMS,
     ONE_YEAR_ITEMS,
@@ -318,10 +320,10 @@ class TestCodisSingleHourlyMonthly:
         assert ONE_DATE_ITEMS["紫外線指數"] == "UVIndex"
         assert "測站最高氣壓(hPa) / 測站最高氣壓時間(LST)" not in ONE_DATE_ITEMS
 
+    @patch(f"{MODULE}._codis_session")
     @patch(f"{MODULE}.get_valid_cookie", return_value="session=fake")
-    @patch(f"{MODULE}.requests.post")
     def test_fetch_parses_hour_wrapped_json(
-        self, mock_post: MagicMock, _mock_cookie: MagicMock
+        self, _mock_cookie: MagicMock, mock_session_factory: MagicMock
     ) -> None:
         mock_response = MagicMock()
         mock_response.raise_for_status.return_value = None
@@ -331,12 +333,38 @@ class TestCodisSingleHourlyMonthly:
                 "data": [{"StationID": "466900", "dts": SAMPLE_DTS}],
             }
         }
-        mock_post.return_value = mock_response
+        session = MagicMock()
+        session.__enter__.return_value = session
+        session.__exit__.return_value = False
+        session.post.return_value = mock_response
+        mock_session_factory.return_value = session
 
         success, data, message = _fetch_single_item({"item": "SeaLevelPressure"})
+
         assert success is True
         assert data == SAMPLE_DTS
         assert message == "下載成功"
+        session.post.assert_called_once()
+        assert session.post.call_args.args[0] == API_URL
+        assert session.post.call_args.kwargs["headers"]["Cookie"] == "session=fake"
+
+    @patch(f"{MODULE}._codis_session")
+    @patch(f"{MODULE}.get_valid_cookie", return_value="session=fake")
+    def test_fetch_ssl_error_is_network_error(
+        self, _mock_cookie: MagicMock, mock_session_factory: MagicMock
+    ) -> None:
+        session = MagicMock()
+        session.__enter__.return_value = session
+        session.__exit__.return_value = False
+        session.post.side_effect = requests.exceptions.SSLError("CERTIFICATE_VERIFY_FAILED")
+        mock_session_factory.return_value = session
+
+        success, data, message = _fetch_single_item({"item": "SeaLevelPressure"})
+
+        assert success is False
+        assert data is None
+        assert "發生網路錯誤" in message
+        assert "CERTIFICATE_VERIFY_FAILED" in message
 
 
 # ---------------------------------------------------------------------------

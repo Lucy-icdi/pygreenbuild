@@ -7,8 +7,11 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 
 from pygreenbuild.ingestion.weather_crawler.codis_stn_obs_crawler import (
+    API_URL,
+    _fetch_data,
     codis_daily,
     codis_monthly,
     codis_yearly,
@@ -16,6 +19,121 @@ from pygreenbuild.ingestion.weather_crawler.codis_stn_obs_crawler import (
 
 MODULE = "pygreenbuild.ingestion.weather_crawler.codis_stn_obs_crawler"
 SAMPLE_DTS = [{"DataTime": "2024-01-01T00:00:00", "AirTemperature": 20.0}]
+
+
+def _session_post(response: MagicMock | None = None, *, side_effect: Exception | None = None) -> MagicMock:
+    """建立可供 ``with _codis_session()`` 使用的假 session。"""
+    session = MagicMock()
+    session.__enter__.return_value = session
+    session.__exit__.return_value = False
+    if side_effect is not None:
+        session.post.side_effect = side_effect
+    else:
+        session.post.return_value = response
+    return session
+
+
+class TestFetchData:
+    @patch(f"{MODULE}._codis_session")
+    @patch(f"{MODULE}.get_valid_cookie", return_value="PHPSESSID=fake")
+    def test_posts_through_cwa_ssl_session(
+        self, _mock_cookie: MagicMock, mock_session_factory: MagicMock
+    ) -> None:
+        response = MagicMock()
+        response.raise_for_status.return_value = None
+        response.json.return_value = {"data": [{"dts": SAMPLE_DTS}]}
+        session = _session_post(response)
+        mock_session_factory.return_value = session
+
+        success, data, message = _fetch_data({"type": "report_year"})
+
+        assert success is True
+        assert data == SAMPLE_DTS
+        assert message == "下載成功"
+        session.post.assert_called_once()
+        assert session.post.call_args.args[0] == API_URL
+        assert session.post.call_args.kwargs["headers"]["Cookie"] == "PHPSESSID=fake"
+        assert session.post.call_args.kwargs["data"] == {"type": "report_year"}
+
+    @patch(f"{MODULE}.get_valid_cookie", side_effect=Exception("cookie down"))
+    def test_cookie_failure(self, _mock_cookie: MagicMock) -> None:
+        success, data, message = _fetch_data({"type": "report_year"})
+
+        assert success is False
+        assert data is None
+        assert message == "取得 Cookie 失敗: cookie down"
+
+    @patch(f"{MODULE}._codis_session")
+    @patch(f"{MODULE}.get_valid_cookie", return_value="PHPSESSID=fake")
+    def test_ssl_error_is_network_error(
+        self, _mock_cookie: MagicMock, mock_session_factory: MagicMock
+    ) -> None:
+        mock_session_factory.return_value = _session_post(
+            side_effect=requests.exceptions.SSLError("CERTIFICATE_VERIFY_FAILED")
+        )
+
+        success, data, message = _fetch_data({"type": "report_year"})
+
+        assert success is False
+        assert data is None
+        assert "發生網路錯誤" in message
+        assert "CERTIFICATE_VERIFY_FAILED" in message
+
+    @patch(f"{MODULE}._codis_session")
+    @patch(f"{MODULE}.get_valid_cookie", return_value="PHPSESSID=fake")
+    def test_http_error(
+        self, _mock_cookie: MagicMock, mock_session_factory: MagicMock
+    ) -> None:
+        response = MagicMock()
+        response.raise_for_status.side_effect = requests.exceptions.HTTPError("500")
+        mock_session_factory.return_value = _session_post(response)
+
+        success, data, message = _fetch_data({"type": "report_year"})
+
+        assert success is False
+        assert data is None
+        assert message.startswith("發生 HTTP 錯誤:")
+
+    @patch(f"{MODULE}._codis_session")
+    @patch(f"{MODULE}.get_valid_cookie", return_value="PHPSESSID=fake")
+    def test_invalid_json(
+        self, _mock_cookie: MagicMock, mock_session_factory: MagicMock
+    ) -> None:
+        response = MagicMock()
+        response.raise_for_status.return_value = None
+        response.json.side_effect = json.JSONDecodeError("bad", "", 0)
+        mock_session_factory.return_value = _session_post(response)
+
+        success, data, message = _fetch_data({"type": "report_year"})
+
+        assert success is False
+        assert data is None
+        assert "Cookie 無效" in message
+
+    @patch(f"{MODULE}._codis_session")
+    @patch(f"{MODULE}.get_valid_cookie", return_value="PHPSESSID=fake")
+    def test_empty_or_unexpected_payload(
+        self, _mock_cookie: MagicMock, mock_session_factory: MagicMock
+    ) -> None:
+        empty = MagicMock()
+        empty.raise_for_status.return_value = None
+        empty.json.return_value = {"data": [{"dts": []}]}
+        mock_session_factory.return_value = _session_post(empty)
+
+        success, data, message = _fetch_data({"type": "report_year"})
+        assert success is False
+        assert data is None
+        assert message == "下載成功，但內容為空"
+
+        unexpected = MagicMock()
+        unexpected.raise_for_status.return_value = None
+        unexpected.json.return_value = {"data": []}
+        mock_session_factory.return_value = _session_post(unexpected)
+
+        success, data, message = _fetch_data({"type": "report_year"})
+        assert success is False
+        assert data is None
+        assert message == "API 回傳格式不符預期"
 
 
 # ---------------------------------------------------------------------------

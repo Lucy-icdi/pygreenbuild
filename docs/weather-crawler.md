@@ -16,6 +16,8 @@ from pygreenbuild import (
 
 自中央氣象署 CODIS API 擷取測站年報／月報／日報／單項逐時月報表／單項逐日年報表／單項逐月年報表觀測 JSON。預設寫入檔案；若需在程式中繼續處理，可設 `return_data=True` 取得 `list[dict]`（可再交給 [`json_to_dataframe`](json-to-dataframe.md)）。
 
+Cookie 取得與資料下載都使用同一套相容 Python 3.13+ 的 SSL 連線（見文末 Cookie 管理）。
+
 ---
 
 ## `codis_yearly`（年報）
@@ -525,7 +527,7 @@ ok, data, msg = codis_single_monthly_yearly(
 
 CODIS API 需帶 Session Cookie。年／月／日報與單項爬蟲會呼叫 `get_valid_cookie()`，一般不必直接使用本模組。
 
-Python 3.13 起預設啟用 `ssl.VERIFY_X509_STRICT`。中央氣象署網站憑證鏈接到 TWCA，可能因缺少 Subject Key Identifier 而握手失敗。本模組會關閉該旗標，仍驗證憑證簽章、主機名稱與有效期限，因此 3.12、3.13、3.14 均可連線。
+Python 3.13 起預設啟用 `ssl.VERIFY_X509_STRICT`。中央氣象署網站憑證鏈接到 TWCA，可能因缺少 Subject Key Identifier 而握手失敗。Cookie 取得、Cookie 驗證，以及年／月／日報與單項報表的資料下載，都透過 `_codis_session()` 關閉該旗標。仍驗證憑證簽章、主機名稱與有效期限，因此 3.12、3.13、3.14 均可連線。
 
 ---
 

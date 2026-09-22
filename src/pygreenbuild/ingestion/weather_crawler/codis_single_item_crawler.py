@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 
-from .codis_cookie_manager import get_valid_cookie
+from .codis_cookie_manager import _codis_session, get_valid_cookie
 from .codis_stn_obs_crawler import (
     API_URL,
     HEADERS,
@@ -222,7 +222,14 @@ def _unwrap_station_payload(response_data: Any) -> Optional[Dict[str, Any]]:
 
 
 def _fetch_single_item(payload: Dict[str, str]) -> Tuple[bool, Optional[CodisData], str]:
-    """發送單項報表請求並解析 ``dts``。"""
+    """發送單項報表請求並解析 ``dts``。
+
+    透過 ``_codis_session()`` 連線，以便在 Python 3.13+ 略過
+    ``VERIFY_X509_STRICT`` 後仍能連上中央氣象署。
+
+    Returns:
+        Tuple[bool, Optional[CodisData], str]: 成功與否、資料（失敗時為 None）、訊息。
+    """
     try:
         cookie_value = get_valid_cookie()
     except Exception as exc:
@@ -232,7 +239,8 @@ def _fetch_single_item(payload: Dict[str, str]) -> Tuple[bool, Optional[CodisDat
     current_headers["Cookie"] = cookie_value
 
     try:
-        response = requests.post(API_URL, headers=current_headers, data=payload)
+        with _codis_session() as session:
+            response = session.post(API_URL, headers=current_headers, data=payload)
         response.raise_for_status()
         response_data = response.json()
 

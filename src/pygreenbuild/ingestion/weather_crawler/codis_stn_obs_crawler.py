@@ -4,7 +4,7 @@ import os
 import calendar
 from typing import Tuple, Dict, Optional, List, Any, overload, Union
 from datetime import datetime
-from .codis_cookie_manager import get_valid_cookie
+from .codis_cookie_manager import _codis_session, get_valid_cookie
 
 # --- 共用常數與設定 ---
 API_URL = "https://codis.cwa.gov.tw/api/station"
@@ -41,8 +41,10 @@ def _get_stn_type(station_id: str) -> str:
 
 
 def _fetch_data(payload: Dict) -> Tuple[bool, Optional[CodisData], str]:
-    """
-    核心函式，負責發送請求並解析回應資料。
+    """發送 CODIS 請求並解析回應資料。
+
+    透過 ``_codis_session()`` 連線，以便在 Python 3.13+ 略過
+    ``VERIFY_X509_STRICT`` 後仍能連上中央氣象署。
 
     Returns:
         Tuple[bool, Optional[CodisData], str]: 成功與否、資料（失敗時為 None）、訊息。
@@ -56,7 +58,8 @@ def _fetch_data(payload: Dict) -> Tuple[bool, Optional[CodisData], str]:
     current_headers['Cookie'] = cookie_value
 
     try:
-        response = requests.post(API_URL, headers=current_headers, data=payload)
+        with _codis_session() as session:
+            response = session.post(API_URL, headers=current_headers, data=payload)
         response.raise_for_status()
         response_data = response.json()
 
